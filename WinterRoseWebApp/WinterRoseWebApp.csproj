@@ -18,11 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Uploads\giftapp\" />
+    <ProjectReference Include="..\..\WinterRose-Development\WinterRose.Diff\WinterRose.Diff.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\WinterRose-Development\WinterRose.Diff\WinterRose.Diff.csproj" />
+    <Folder Include="Uploads\" />
   </ItemGroup>
 
 </Project>

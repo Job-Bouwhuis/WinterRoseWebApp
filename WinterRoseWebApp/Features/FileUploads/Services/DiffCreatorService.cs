@@ -82,6 +82,8 @@ public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorSer
 
             var diff = await directoryDiffer.DiffAsync(previous, latest);
 
+            //TestDiffApply(previous, latest, diff);
+
             var diffDir = baseDir.CreateSubdirectory("Diffs");
 
             string prevVers = Path.GetFileNameWithoutExtension(previous.FullName);
@@ -92,6 +94,48 @@ public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorSer
 
             diff.Save(Path.Combine(diffDir.FullName, diffName));
             logger.LogInformation("A version diff was created: {0}", diffName);
+        }
+    }
+
+    private void TestDiffApply(DirectoryInfo previous, DirectoryInfo latest, DirectoryDiff diff)
+    {
+        string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        string testDirectory = Path.Combine(desktop, previous.Name);
+
+        if (Directory.Exists(testDirectory))
+            Directory.Delete(testDirectory, true);
+
+        CopyDirectory(previous.FullName, testDirectory);
+
+        var applyer = new DiffApplyer();
+
+        foreach (var fileDiff in diff.FileDiffs)
+        {
+            string targetFile = Path.Combine(testDirectory, fileDiff.Key);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(targetFile)!);
+
+            applyer.ApplyDiff(targetFile, fileDiff.Value);
+        }
+    }
+
+    private void CopyDirectory(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+
+        foreach (string directory in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
+        {
+            string relative = Path.GetRelativePath(source, directory);
+            Directory.CreateDirectory(Path.Combine(destination, relative));
+        }
+
+        foreach (string file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
+        {
+            string relative = Path.GetRelativePath(source, file);
+            string target = Path.Combine(destination, relative);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target, true);
         }
     }
 
