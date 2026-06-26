@@ -82,8 +82,6 @@ public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorSer
 
             var diff = await directoryDiffer.DiffAsync(previous, latest);
 
-            //TestDiffApply(previous, latest, diff);
-
             var diffDir = baseDir.CreateSubdirectory("Diffs");
 
             string prevVers = Path.GetFileNameWithoutExtension(previous.FullName);
@@ -94,6 +92,10 @@ public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorSer
 
             diff.Save(Path.Combine(diffDir.FullName, diffName));
             logger.LogInformation("A version diff was created: {0}", diffName);
+
+            DirectoryDiff loaded = DirectoryDiff.Load(Path.Combine(diffDir.FullName, diffName));
+
+            TestDiffApply(previous, latest, loaded);
         }
     }
 
@@ -109,14 +111,20 @@ public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorSer
 
         var applyer = new DiffApplyer();
 
-        foreach (var fileDiff in diff.FileDiffs)
+        logger.LogInformation("Applying diff to test directory: {0}", testDirectory);
+        var t = applyer.ApplyDiff(testDirectory, diff).GetAwaiter().GetResult();
+
+        if (t.Count is 0)
+            logger.LogInformation("Diff applied successfully!");
+        else
         {
-            string targetFile = Path.Combine(testDirectory, fileDiff.Key);
-
-            Directory.CreateDirectory(Path.GetDirectoryName(targetFile)!);
-
-            applyer.ApplyDiff(targetFile, fileDiff.Value);
+            foreach(string path in t)
+            {
+                logger.LogWarning("Diff failed for file {}", path);
+            }
         }
+
+
     }
 
     private void CopyDirectory(string source, string destination)
