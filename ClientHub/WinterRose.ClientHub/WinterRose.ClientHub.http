@@ -1,0 +1,6 @@
+@WinterRose.ClientHub_HostAddress = http://localhost:5089
+
+GET {{WinterRose.ClientHub_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using WinterRoseWebApp.Data;
 
-namespace WinterRoseWebApp.Components.Account;
+namespace WinterRoseWebApp.Features.Account;
 
 internal sealed class IdentityRedirectManager(NavigationManager navigationManager)
 {

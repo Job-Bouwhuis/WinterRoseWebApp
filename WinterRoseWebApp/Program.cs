@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WinterRose.Recordium;
-using WinterRoseWebApp.Components;
-using WinterRoseWebApp.Components.Account;
+using WinterRoseWebApp.Features;
 using WinterRoseWebApp.Data;
+using WinterRoseWebApp.Features.Account;
 using WinterRoseWebApp.Features.Dashboard.Services;
 using WinterRoseWebApp.Features.FileUploads.Endpoints;
 using WinterRoseWebApp.Features.FileUploads.Services;
@@ -86,7 +86,6 @@ internal class Program
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
 
-        // Add additional endpoints required by the Identity /Account Razor components.
         app.MapAdditionalIdentityEndpoints();
 
         app.AddDiffFileDownloads();

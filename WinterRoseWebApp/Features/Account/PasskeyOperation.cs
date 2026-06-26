@@ -1,4 +1,4 @@
-namespace WinterRoseWebApp.Components.Account;
+namespace WinterRoseWebApp.Features.Account;
 
 public enum PasskeyOperation
 {

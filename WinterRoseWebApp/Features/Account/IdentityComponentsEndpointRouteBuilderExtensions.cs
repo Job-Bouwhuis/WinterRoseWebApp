@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using System.Security.Claims;
 using System.Text.Json;
-using WinterRoseWebApp.Components.Account.Pages;
-using WinterRoseWebApp.Components.Account.Pages.Manage;
+using WinterRoseWebApp.Features.Account.Pages;
+using WinterRoseWebApp.Features.Account.Pages.Manage;
 using WinterRoseWebApp.Data;
 
-namespace Microsoft.AspNetCore.Routing;
+namespace WinterRoseWebApp.Features.Account;
 
 internal static class IdentityComponentsEndpointRouteBuilderExtensions
 {

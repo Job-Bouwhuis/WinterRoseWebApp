@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/ClientHub/">
+    <Project Path="ClientHub/WinterRose.ClientHub/WinterRose.ClientHub.csproj" Id="4ce63e2d-8e73-4ede-9c13-b3b777de9b9d" />
+  </Folder>
   <Folder Name="/WinterForge/">
     <Project Path="../WinterRose.WinterForge/src/WinterRose.Reflection/WinterRose.Reflection.csproj" />
     <Project Path="../WinterRose.WinterForge/src/WinterRose.WinterForge/WinterRose.WinterForge.csproj" />
