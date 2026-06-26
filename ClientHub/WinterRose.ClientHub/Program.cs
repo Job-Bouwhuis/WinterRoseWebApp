@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Identity.Web;
+using WinterRose.ClientHub.Feature.InformationRelay.Services;
+using WinterRose.Web.Problems;
+using WinterRose.Web.Validation.Middleware;
 
 internal class Program
 {
@@ -8,13 +8,16 @@ internal class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
-        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+        builder.Services.AddValidation();
+        builder.Services.AddGracefulProblemDetails();
+
+        builder.Services.AddHttpClient<AppServerClient>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["AppServer:BaseUrl"]
+                    ?? throw new InvalidOperationException("AppServer:BaseUrl configuration is missing"));
+        });
 
         builder.Services.AddControllers();
-        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-        builder.Services.AddOpenApi();
 
         var app = builder.Build();
 

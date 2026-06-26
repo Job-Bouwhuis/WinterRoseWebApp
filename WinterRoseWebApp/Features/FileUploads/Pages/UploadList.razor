@@ -3,8 +3,9 @@
 
 @using WinterRoseWebApp.Features.FileUploads.Services
 @using WinterRoseWebApp.Features.FileUploads.Models
+@using WinterRoseWebApp.Features.Api.Apps.Services
 
-@inject UploadService UploadService
+@inject AppRepository AppRepository
 @inject NavigationManager Navigation
 
 <div class="upload-list-page">
@@ -13,17 +14,17 @@
         <p class="text-muted mb-0">Manage releases and view available diffs</p>
     </div>
 
-    @if (uploadGroups is null)
+    @if (AppEntries is null)
     {
         <div class="text-muted">Loading...</div>
     }
-    else if (!uploadGroups.Any())
+    else if (!AppEntries.Any())
     {
         <div class="alert alert-secondary">No uploads found.</div>
     }
     else
     {
-        @foreach (var group in uploadGroups)
+        @foreach (var group in AppEntries)
         {
             <div class="upload-group card mb-4 shadow-sm">
                 <div class="card-header d-flex align-items-center gap-2">
@@ -127,11 +128,11 @@
 </div>
 
 @code {
-    private List<UploadGroup>? uploadGroups;
+    private List<AppEntry>? AppEntries;
 
     protected override async Task OnInitializedAsync()
     {
-        uploadGroups = await UploadService.GetUploadGroupsAsync();
+        AppEntries = await AppRepository.GetAppEntries();
     }
 
     private void DownloadDiff(DiffEntry diff)

@@ -19,11 +19,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\WinterRose-Development\WinterRose.Diff\WinterRose.Diff.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Components\" />
-    <Folder Include="Uploads\" />
+    <ProjectReference Include="..\ClientHub\Utils\HBOICT_Corp.Problems\WinterRose.Web.Problems.csproj" />
+    <ProjectReference Include="..\ClientHub\Utils\HBOICT_Corp.Utils\WinterRose.Web.Utils.csproj" />
+    <ProjectReference Include="..\ClientHub\Utils\HBOICT_Corp.Validation\WinterRose.Web.Validation.csproj" />
+    <ProjectReference Include="..\WinterRose.ClientHub.Shared\WinterRose.ClientHub.Shared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-WinterRose.ClientHub-c7b80a6f-3e7c-4425-9bbd-776bf8e55d9a</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <DockerfileContext>..\..</DockerfileContext>
+    <!--<DockerfileContext>..\..</DockerfileContext>-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +16,14 @@
     <PackageReference Include="Microsoft.Identity.Web" Version="3.14.1" />
     <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="3.14.1" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\WinterRose.WinterForge\src\WinterRose.WinterForge\WinterRose.WinterForge.csproj" />
+    <ProjectReference Include="..\..\WinterRose.ClientHub.Shared\WinterRose.ClientHub.Shared.csproj" />
+    <ProjectReference Include="..\Utils\HBOICT_Corp.Problems\WinterRose.Web.Problems.csproj" />
+    <ProjectReference Include="..\Utils\HBOICT_Corp.Utils\WinterRose.Web.Utils.csproj" />
+    <ProjectReference Include="..\Utils\HBOICT_Corp.Validation\WinterRose.Web.Validation.csproj" />
   </ItemGroup>
 
 </Project>

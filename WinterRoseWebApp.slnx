@@ -1,11 +1,19 @@
 <Solution>
   <Folder Name="/ClientHub/">
+    <Project Path="ClientHub/WinterRose.ClientHub.Interface/WinterRose.ClientHub.Interface.csproj" Id="9ab07707-b194-4032-a69f-4f6fcd11e735" />
     <Project Path="ClientHub/WinterRose.ClientHub/WinterRose.ClientHub.csproj" Id="4ce63e2d-8e73-4ede-9c13-b3b777de9b9d" />
+  </Folder>
+  <Folder Name="/Utils/">
+    <Project Path="ClientHub/Utils/HBOICT_Corp.Problems/WinterRose.Web.Problems.csproj" />
+    <Project Path="ClientHub/Utils/HBOICT_Corp.Utils/WinterRose.Web.Utils.csproj" />
+    <Project Path="ClientHub/Utils/HBOICT_Corp.Validation.Abstractions/WinterRose.Web.Validation.Abstractions.csproj" />
+    <Project Path="ClientHub/Utils/HBOICT_Corp.Validation/WinterRose.Web.Validation.csproj" />
   </Folder>
   <Folder Name="/WinterForge/">
     <Project Path="../WinterRose.WinterForge/src/WinterRose.Reflection/WinterRose.Reflection.csproj" />
     <Project Path="../WinterRose.WinterForge/src/WinterRose.WinterForge/WinterRose.WinterForge.csproj" />
   </Folder>
   <Project Path="../WinterRose-Development/WinterRose.Diff/WinterRose.Diff.csproj" />
+  <Project Path="WinterRose.ClientHub.Shared/WinterRose.ClientHub.Shared.csproj" Id="76d36d3d-298c-4a50-ba69-436d0de5aa57" />
   <Project Path="WinterRoseWebApp/WinterRoseWebApp.csproj" />
 </Solution>

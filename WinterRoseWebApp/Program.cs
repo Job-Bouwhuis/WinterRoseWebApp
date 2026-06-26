@@ -9,6 +9,7 @@ using WinterRoseWebApp.Features.Account;
 using WinterRoseWebApp.Features.Dashboard.Services;
 using WinterRoseWebApp.Features.FileUploads.Endpoints;
 using WinterRoseWebApp.Features.FileUploads.Services;
+using WinterRoseWebApp.Features.Api.Apps.Services;
 
 internal class Program
 {
@@ -46,6 +47,8 @@ internal class Program
             .AddSignInManager()
             .AddDefaultTokenProviders();
 
+        builder.Services.AddSingleton<AppRepository>();
+
         builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
         builder.Services.AddScoped<DashboardDataService>();
         builder.Services.AddSingleton<UploadQueue>();
@@ -58,6 +61,8 @@ internal class Program
         {
             options.MultipartBodyLengthLimit = long.MaxValue;
         });
+
+        builder.Services.AddControllers();
 
         var app = builder.Build();
 
@@ -87,6 +92,8 @@ internal class Program
             .AddInteractiveServerRenderMode();
 
         app.MapAdditionalIdentityEndpoints();
+
+        app.MapControllers();
 
         app.AddDiffFileDownloads();
 
