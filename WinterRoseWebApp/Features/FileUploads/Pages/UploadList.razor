@@ -1,0 +1,164 @@
+@page "/uploads/list"
+@rendermode RenderMode.InteractiveServer
+
+@using WinterRoseWebApp.Features.FileUploads.Services
+@using WinterRoseWebApp.Features.FileUploads.Models
+
+@inject UploadService UploadService
+@inject NavigationManager Navigation
+
+<div class="upload-list-page">
+    <div class="page-header mb-4">
+        <h2 class="mb-1">Uploaded Versions</h2>
+        <p class="text-muted mb-0">Manage releases and view available diffs</p>
+    </div>
+
+    @if (uploadGroups is null)
+    {
+        <div class="text-muted">Loading...</div>
+    }
+    else if (!uploadGroups.Any())
+    {
+        <div class="alert alert-secondary">No uploads found.</div>
+    }
+    else
+    {
+        @foreach (var group in uploadGroups)
+        {
+            <div class="upload-group card mb-4 shadow-sm">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <span class="fw-semibold fs-5">@group.Name</span>
+                    <span class="badge bg-secondary ms-auto">@group.Versions.Count version@(group.Versions.Count != 1 ? "s" : "")</span>
+                </div>
+
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Version</th>
+                                <th>Uploaded</th>
+                                <th>Diffs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var version in group.Versions)
+                            {
+                                <tr>
+                                    <td class="ps-3 align-middle">
+                                        <span class="badge bg-primary font-monospace">@version.VersionLabel</span>
+                                    </td>
+                                    <td class="align-middle text-muted small">
+                                        @version.UploadedAt.ToString("yyyy-MM-dd HH:mm")
+                                    </td>
+                                    <td class="align-middle">
+                                        @{
+                                            var diffsFromThis = group.Diffs
+                                                .Where(d => d.FromVersion == version.VersionLabel)
+                                                .ToList();
+
+                                            var higherVersions = group.Versions
+                                                .Where(v => CompareVersions(v.VersionLabel, version.VersionLabel) > 0)
+                                                .OrderBy(v => v.VersionLabel)
+                                                .ToList();
+                                        }
+
+                                        @if (!higherVersions.Any())
+                                        {
+                                            <span class="text-muted small fst-italic">latest</span>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex flex-wrap gap-2">
+                                                @foreach (var diff in diffsFromThis)
+                                                {
+                                                    <div class="diff-entry d-flex align-items-center gap-1 border rounded px-2 py-1 bg-light">
+                                                        <span class="small text-muted me-1">→</span>
+                                                        <span class="badge bg-success font-monospace">@diff.ToVersion</span>
+
+                                                        <div class="dropdown ms-1">
+                                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0 px-1"
+                                                                    type="button"
+                                                                    data-bs-toggle="dropdown"
+                                                                    aria-expanded="false"
+                                                                    title="Apply to version">
+                                                                Apply to
+                                                            </button>
+                                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                                @foreach (var target in higherVersions)
+                                                                {
+                                                                    <li>
+                                                                        <button class="dropdown-item font-monospace small"
+                                                                                @onclick="() => DownloadDiff(diff)"
+                                                                                disabled="@(target.VersionLabel != diff.ToVersion)">
+                                                                            @target.VersionLabel
+                                                                            @if (target.VersionLabel == diff.ToVersion)
+                                                                            {
+                                                                                <span class="text-success ms-1">✓</span>
+                                                                            }
+                                                                        </button>
+                                                                    </li>
+                                                                }
+                                                            </ul>
+                                                        </div>
+
+                                                        <button class="btn btn-sm btn-primary py-0 px-2 ms-1"
+                                                                @onclick="() => DownloadDiff(diff)"
+                                                                title="Download diff file">
+                                                            ↓
+                                                        </button>
+                                                    </div>
+                                                }
+
+                                                @if (!diffsFromThis.Any())
+                                                {
+                                                    <span class="text-muted small fst-italic">no diffs</span>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<UploadGroup>? uploadGroups;
+
+    protected override async Task OnInitializedAsync()
+    {
+        uploadGroups = await UploadService.GetUploadGroupsAsync();
+    }
+
+    private void DownloadDiff(DiffEntry diff)
+    {
+        Navigation.NavigateTo($"/api/uploads/diff/download?file={Uri.EscapeDataString(diff.FilePath)}", forceLoad: true);
+    }
+
+    /// <summary>
+    /// Compares two version strings of the form N_N_N.
+    /// Returns positive if a > b, negative if a < b, 0 if equal.
+    /// </summary>
+    private static int CompareVersions(string a, string b)
+    {
+        static int[] Parse(string v) =>
+            v.Split('_').Select(p => int.TryParse(p, out var n) ? n : 0).ToArray();
+
+        var pa = Parse(a);
+        var pb = Parse(b);
+        var len = Math.Max(pa.Length, pb.Length);
+
+        for (int i = 0; i < len; i++)
+        {
+            var ai = i < pa.Length ? pa[i] : 0;
+            var bi = i < pb.Length ? pb[i] : 0;
+            if (ai != bi) return ai.CompareTo(bi);
+        }
+
+        return 0;
+    }
+}

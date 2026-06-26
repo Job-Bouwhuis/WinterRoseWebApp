@@ -7,6 +7,7 @@ using WinterRoseWebApp.Components;
 using WinterRoseWebApp.Components.Account;
 using WinterRoseWebApp.Data;
 using WinterRoseWebApp.Features.Dashboard.Services;
+using WinterRoseWebApp.Features.FileUploads.Endpoints;
 using WinterRoseWebApp.Features.FileUploads.Services;
 
 internal class Program
@@ -87,6 +88,8 @@ internal class Program
 
         // Add additional endpoints required by the Identity /Account Razor components.
         app.MapAdditionalIdentityEndpoints();
+
+        app.AddDiffFileDownloads();
 
         app.Run();
     }
