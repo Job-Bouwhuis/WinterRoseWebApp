@@ -1,0 +1,3 @@
+﻿GiftApp.Settings->HeartDisplayTime = "00:00:10";
+GiftApp.Settings->FlowerDisplayTime = "00:00:10";
+GiftApp.Settings->FlowerInterval = "00:30:00";

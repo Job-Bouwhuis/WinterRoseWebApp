@@ -1,0 +1,95 @@
+﻿using Microsoft.AspNetCore.Components.Forms;
+using System.Text.RegularExpressions;
+using WinterRoseWebApp.Features.FileUploads.Models;
+
+namespace WinterRoseWebApp.Features.FileUploads.Services;
+
+public class UploadService
+{
+    private readonly IWebHostEnvironment environment;
+    private readonly UploadQueue uploadQueue;
+
+    public UploadService(IWebHostEnvironment environment, UploadQueue uploadQueue)
+    {
+        this.environment = environment;
+        this.uploadQueue = uploadQueue;
+    }
+
+    public async Task<UploadResult> SaveAsync(
+        string name,
+        string version,
+        IEnumerable<(IBrowserFile File, string RelativePath)> files)
+    {
+        var safeName = Sanitize(name);
+        var safeVersion = Sanitize(version);
+
+        var basePath = Path.Combine(environment.ContentRootPath, "Uploads", safeName);
+        var versionPath = Path.Combine(basePath, safeVersion);
+        var latestPath = Path.Combine(basePath, "latest");
+
+        Directory.CreateDirectory(versionPath);
+
+        foreach (var entry in files)
+        {
+            var relativePath = NormalizeRelativePath(entry.RelativePath);
+
+            var fullPath = Path.Combine(versionPath, relativePath);
+
+            var directory = Path.GetDirectoryName(fullPath);
+            if (!string.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
+
+            await using var stream = entry.File.OpenReadStream(long.MaxValue);
+            await using var fs = File.Create(fullPath);
+
+            await stream.CopyToAsync(fs);
+        }
+
+        MirrorDirectory(versionPath, latestPath);
+
+        await uploadQueue.Writer.WriteAsync(new UploadCompletedEvent(safeName, basePath));
+
+        return new UploadResult
+        {
+            Name = safeName,
+            Version = safeVersion,
+            TargetPath = versionPath
+        };
+    }
+
+    private string NormalizeRelativePath(string path)
+    {
+        
+        path = path.Replace('\\', '/').TrimStart('/');
+
+        // "MyApp/subfolder/file.dll" > "subfolder/file.dll"
+        var slashIndex = path.IndexOf('/');
+        if (slashIndex >= 0)
+            path = path[(slashIndex + 1)..];
+
+        return path.Replace('/', Path.DirectorySeparatorChar);
+    }
+    private void MirrorDirectory(string source, string target)
+    {
+        if (Directory.Exists(target))
+            Directory.Delete(target, true);
+
+        foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(source, file);
+            var dst = Path.Combine(target, relative);
+
+            var dir = Path.GetDirectoryName(dst);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+
+            File.Copy(file, dst, true);
+        }
+    }
+    private string Sanitize(string input)
+    {
+        input = input.Trim().ToLowerInvariant();
+        input = Regex.Replace(input, @"[^a-z0-9_\-]", "_");
+        return input;
+    }
+}

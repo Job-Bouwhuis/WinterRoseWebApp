@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../WinterRose-Development/WinterRose.Diff/WinterRose.Diff.csproj" />
+  <Project Path="WinterRoseWebApp/WinterRoseWebApp.csproj" />
+</Solution>
