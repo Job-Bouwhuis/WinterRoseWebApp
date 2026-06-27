@@ -10,8 +10,15 @@ public static class HttpClientExtensions
         {
             var response = await client.GetAsync(requestUri).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-
-            object? result = WinterForge.DeserializeFromHumanReadableStream(response.Content.ReadAsStream());
+            
+            using MemoryStream mem = new MemoryStream();
+            using MemoryStream mem2 = new MemoryStream();
+            await response.Content.CopyToAsync(mem).ConfigureAwait(false);
+            mem.Position = 0;
+            WinterForge.ConvertFromStreamToStream(mem, mem2, TargetFormat.Optimized);
+            mem2.Position = 0;
+            
+            object? result = WinterForge.DeserializeFromStream(mem2);
             if(result is null or Nothing)
                 throw new InvalidDataException("The response content returned no data");
 

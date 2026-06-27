@@ -1,0 +1,4 @@
+@main_endpoint = https://localhost:7184
+
+GET {{main_endpoint}}/apps
+Accept: application/winterforge

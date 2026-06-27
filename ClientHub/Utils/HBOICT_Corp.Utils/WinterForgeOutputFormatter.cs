@@ -17,6 +17,8 @@ public sealed class WinterForgeOutputFormatter : IOutputFormatter
         WinterForge.SerializeToStream(context.Object!, mem, TargetFormat.FormattedHumanReadable);
         mem.Position = 0;
 
+        string test = new string(mem.ToArray().Select(b => (char)b).ToArray());
+        
         await mem.CopyToAsync(context.HttpContext.Response.Body);
     }
 }
