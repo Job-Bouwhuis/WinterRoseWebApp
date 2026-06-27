@@ -11,4 +11,9 @@
     <PackageReference Include="GtkSharp" Version="3.24.24.95" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\WinterRose.ClientHub.Shared\WinterRose.ClientHub.Shared.csproj" />
+    <ProjectReference Include="..\Utils\HBOICT_Corp.Validation.Abstractions\WinterRose.Web.Validation.Abstractions.csproj" />
+  </ItemGroup>
+
 </Project>

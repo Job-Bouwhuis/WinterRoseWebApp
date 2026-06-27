@@ -1,10 +1,12 @@
 ﻿using System.Threading.Channels;
+using WinterRoseWebApp.Features.FileUploads.Models;
 
 namespace WinterRoseWebApp.Features.FileUploads.Services;
 
 public record UploadCompletedEvent(
     string Name,
-    string BasePath
+    string BasePath,
+    VersionEntry Version
 );
 
 public sealed class UploadQueue

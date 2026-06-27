@@ -59,7 +59,6 @@ public partial class AppRepository
     public async Task<List<AppEntry>> GetAppEntries()
     {
         var nameDirs = Directory.EnumerateDirectories(UploadsFolderPath)
-            .OrderBy(d => d)
             .ToList();
 
         var result = new AppEntry[nameDirs.Count];
@@ -85,11 +84,9 @@ public partial class AppRepository
         return result.Where(r => r != null).ToList();
     }
 
-
-
     private string GetLatestVersionFromAppPath(string appPath)
     {
-        string latest = null;
+        VersionEntry? latest = null;
 
         foreach (var subDir in Directory.EnumerateDirectories(appPath))
         {
@@ -98,34 +95,42 @@ public partial class AppRepository
             if (folderName.Equals("latest", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            if (folderName.Equals("Diffs", StringComparison.OrdinalIgnoreCase))
+            if (folderName.Equals("diffs", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            if (!IsVersionFolder(folderName))
-                continue;
+            VersionEntry current;
 
-            if (latest == null || CompareVersionLabels(folderName, latest) > 0)
-                latest = folderName;
+            try
+            {
+                current = new VersionEntry(folderName);
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (latest is null || current.CompareTo(latest) > 0)
+                latest = current;
         }
 
-        return latest ?? "0_0_0";
+        return latest?.ToString(VersionStringFormat.FolderSafe) ?? "0_0_0";
     }
 
-    private AppEntry FetchUploadEntryFromPath(string appName)
+    private AppEntry FetchUploadEntryFromPath(string appPath)
     {
-        var uploadName = Path.GetFileName(appName);
+        var uploadName = Path.GetFileName(appPath);
 
         var versions = new List<VersionEntry>();
         var diffs = new List<DiffEntry>();
 
-        foreach (var subDir in Directory.EnumerateDirectories(appName))
+        foreach (var subDir in Directory.EnumerateDirectories(appPath))
         {
             var folderName = Path.GetFileName(subDir);
 
             if (folderName.Equals("latest", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            if (folderName.Equals("Diffs", StringComparison.OrdinalIgnoreCase))
+            if (folderName.Equals("diffs", StringComparison.OrdinalIgnoreCase))
             {
                 foreach (var diffFile in Directory.EnumerateFiles(subDir))
                 {
@@ -148,19 +153,21 @@ public partial class AppRepository
                 continue;
             }
 
-            if (IsVersionFolder(folderName))
-            {
-                var uploadedAt = Directory.GetCreationTimeUtc(subDir);
+            VersionEntry version;
 
-                versions.Add(new VersionEntry
-                {
-                    VersionLabel = folderName,
-                    UploadedAt = uploadedAt,
-                });
+            try
+            {
+                version = new VersionEntry(folderName);
             }
+            catch
+            {
+                continue;
+            }
+
+            versions.Add(version);
         }
 
-        versions.Sort((a, b) => CompareVersionLabels(a.VersionLabel, b.VersionLabel));
+        versions.Sort((a, b) => a.CompareTo(b));
 
         return new AppEntry
         {
@@ -169,27 +176,4 @@ public partial class AppRepository
             Diffs = diffs,
         };
     }
-
-    private static bool IsVersionFolder(string name) => VersionNamePattern().IsMatch(name);
-
-    private static int CompareVersionLabels(string a, string b)
-    {
-        static int[] Parse(string v) =>
-            v.Split('_').Select(p => int.TryParse(p, out var n) ? n : 0).ToArray();
-
-        var pa = Parse(a);
-        var pb = Parse(b);
-        var len = Math.Max(pa.Length, pb.Length);
-
-        for (int i = 0; i < len; i++)
-        {
-            var ai = i < pa.Length ? pa[i] : 0;
-            var bi = i < pb.Length ? pb[i] : 0;
-            if (ai != bi) return ai.CompareTo(bi);
-        }
-
-        return 0;
-    }
-    [GeneratedRegex(@"^\d+(_\d+)+$")]
-    private static partial Regex VersionNamePattern();
 }

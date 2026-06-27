@@ -29,18 +29,18 @@ public partial class UploadService
         IEnumerable<(IBrowserFile File, string RelativePath)> files)
     {
         var safeName = Sanitize(name);
-        var safeVersion = Sanitize(version);
+
+        var versionEntry = new VersionEntry(Sanitize(version));
+        var safeVersion = versionEntry.ToString(VersionStringFormat.FolderSafe);
 
         var basePath = Path.Combine(uploadsFolder.FullName, safeName);
         var versionPath = Path.Combine(basePath, safeVersion);
-        var latestPath = Path.Combine(basePath, "latest");
 
         Directory.CreateDirectory(versionPath);
 
         foreach (var entry in files)
         {
             var relativePath = NormalizeRelativePath(entry.RelativePath);
-
             var fullPath = Path.Combine(versionPath, relativePath);
 
             var directory = Path.GetDirectoryName(fullPath);
@@ -53,9 +53,19 @@ public partial class UploadService
             await stream.CopyToAsync(fs);
         }
 
-        MirrorDirectory(versionPath, latestPath);
+        if (string.IsNullOrEmpty(versionEntry.Tag))
+        {
+            var latestPath = Path.Combine(basePath, "latest", "release");
+            MirrorDirectory(versionPath, latestPath);
+        }
+        else
+        {
+            var tagLatestPath = Path.Combine(basePath, "latest", versionEntry.Tag);
+            MirrorDirectory(versionPath, tagLatestPath);
+        }
 
-        await uploadQueue.Writer.WriteAsync(new UploadCompletedEvent(safeName, basePath));
+        await uploadQueue.Writer.WriteAsync(
+            new UploadCompletedEvent(safeName, basePath, versionEntry));
 
         return new UploadResult
         {
@@ -64,8 +74,6 @@ public partial class UploadService
             TargetPath = versionPath
         };
     }
-
-    
 
     private string NormalizeRelativePath(string path)
     {
@@ -79,6 +87,7 @@ public partial class UploadService
 
         return path.Replace('/', Path.DirectorySeparatorChar);
     }
+
     private void MirrorDirectory(string source, string target)
     {
         if (Directory.Exists(target))
@@ -96,10 +105,12 @@ public partial class UploadService
             File.Copy(file, dst, true);
         }
     }
+
     private string Sanitize(string input)
     {
         input = input.Trim().ToLowerInvariant();
         input = Regex.Replace(input, @"[^a-z0-9_\-]", "_");
+
         return input;
     }
 }

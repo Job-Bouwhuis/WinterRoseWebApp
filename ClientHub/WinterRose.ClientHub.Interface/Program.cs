@@ -1,36 +1,8 @@
 ﻿using Gtk;
+using WinterRose.Web;
+using WinterRoseWebApp.Features.FileUploads.Models;
 
-using Gtk;
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-
-
-public class AppResponse
-{
-    public List<AppDto> Data { get; set; }
-}
-
-public class AppDto
-{
-    public string Name { get; set; }
-    public List<VersionDto> Versions { get; set; }
-    public List<DiffDto> Diffs { get; set; }
-}
-
-public class VersionDto
-{
-    public string VersionLabel { get; set; }
-    public DateTime UploadedAt { get; set; }
-    public string Version { get; set; }
-}
-
-public class DiffDto
-{
-    public string FromVersion { get; set; }
-    public string ToVersion { get; set; }
-    public string FileName { get; set; }
-}
+namespace WinterRose.ClientHub.Interface;
 
 class Program
 {
@@ -41,6 +13,11 @@ class Program
     static void Main(string[] args)
     {
         Application.Init();
+
+        HTTP_CLIENT.DefaultRequestHeaders.Accept.Clear();
+        HTTP_CLIENT.DefaultRequestHeaders.Accept.Add(
+            new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/winterforge")
+        );
 
         Window window = new Window("API Viewer");
         window.SetDefaultSize(700, 500);
@@ -85,42 +62,39 @@ class Program
 
         try
         {
-            string json = await HTTP_CLIENT.GetStringAsync("http://localhost:5089/apps");
-
-            var options = new System.Text.Json.JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            var response = System.Text.Json.JsonSerializer.Deserialize<AppResponse>(json, options);
-
-            if (response?.Data == null)
+            var response = await HTTP_CLIENT.GetFromWinterForge<APIResponse>("http://localhost:5089/apps");
+            if (response?.Data is not List<AppEntry> appSummaries)
                 return;
 
-            foreach (var app in response.Data)
+            foreach (var app in appSummaries)
             {
                 store.AppendValues(app.Name, "APP", "", "");
 
-                foreach (var version in app.Versions ?? new List<VersionDto>())
+                foreach (var version in app.Versions)
                 {
+                    string tagDisplay = string.IsNullOrEmpty(version.Tag)
+                        ? "release"
+                        : version.Tag;
+
                     store.AppendValues(
                         "",
                         "VERSION",
-                        version.VersionLabel,
-                        version.UploadedAt.ToString("u")
+                        $"{version.Major}.{version.Minor}.{version.Patch} [{tagDisplay}]",
+                        version.UploadedAt.ToString("D")
                     );
                 }
 
-                foreach (var diff in app.Diffs ?? new List<DiffDto>())
+                foreach (var diff in app.Diffs)
                 {
                     store.AppendValues(
                         "",
                         "DIFF",
                         $"{diff.FromVersion} → {diff.ToVersion}",
-                        diff.FileName
+                        System.IO.Path.GetFileName(diff.FilePath)
                     );
                 }
             }
+
         }
         catch (Exception ex)
         {

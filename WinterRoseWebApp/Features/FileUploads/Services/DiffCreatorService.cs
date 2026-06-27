@@ -50,53 +50,64 @@ public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorSer
             return;
         }
 
-        var versionDirs = baseDir
+        string targetTag = string.IsNullOrEmpty(ev.Version.Tag)
+            ? "release"
+            : ev.Version.Tag.ToLowerInvariant();
+
+        var versionEntries = baseDir
             .GetDirectories()
-            .Where(d => d.Name != "Latest")
+            .Where(d =>
+                !d.Name.Equals("latest", StringComparison.OrdinalIgnoreCase) &&
+                !d.Name.Equals("diffs", StringComparison.OrdinalIgnoreCase))
             .Select(d => new
             {
                 Directory = d,
-                Version = ParseVersion(d.Name)
+                Version = ParseVersionEntry(d.Name)
             })
             .Where(x => x.Version is not null)
+            .ToList();
+
+        var sameTagVersions = versionEntries
+            .Where(x =>
+                string.IsNullOrEmpty(x.Version!.Tag)
+                    ? targetTag == "release"
+                    : x.Version!.Tag.Equals(ev.Version.Tag, StringComparison.OrdinalIgnoreCase))
             .OrderBy(x => x.Version)
             .ToList();
 
-        if (versionDirs.Count == 0)
+        if (sameTagVersions.Count == 0)
         {
-            logger.LogWarning("No versions found in {Path}", ev.BasePath);
+            logger.LogWarning("No versions found for tag {Tag}", targetTag);
             return;
         }
 
-        var latest = versionDirs[^1].Directory;
-        var previous = versionDirs.Count > 1
-            ? versionDirs[^2].Directory
+        var latest = sameTagVersions[^1].Directory;
+
+        var previous = sameTagVersions.Count > 1
+            ? sameTagVersions[^2].Directory
             : null;
 
         logger.LogInformation("Latest version: {Latest}", latest.FullName);
 
-        if (previous is not null)
-        {
-            logger.LogInformation("Previous version: {Previous}", previous.FullName);
-            logger.LogInformation("Creating diff between {Previous} and {Latest}", previous.FullName, latest.FullName);
+        if (previous is null)
+            return;
 
-            var diff = await directoryDiffer.DiffAsync(previous, latest);
+        logger.LogInformation("Previous version: {Previous}", previous.FullName);
+        logger.LogInformation("Creating diff between {Previous} and {Latest}", previous.FullName, latest.FullName);
 
-            var diffDir = baseDir.CreateSubdirectory("Diffs");
+        var diff = await directoryDiffer.DiffAsync(previous, latest);
 
-            string prevVers = Path.GetFileNameWithoutExtension(previous.FullName);
-            string latestVer = Path.GetFileNameWithoutExtension(latest.FullName);
-            string diffName = $"{prevVers}_TO_{latestVer}";
+        var diffDir = baseDir.CreateSubdirectory("Diffs");
 
-            logger.LogInformation("Diff created, Saving...");
+        string diffName = $"{previous.Name}_TO_{latest.Name}";
 
-            diff.Save(Path.Combine(diffDir.FullName, diffName));
-            logger.LogInformation("A version diff was created: {0}", diffName);
+        diff.Save(Path.Combine(diffDir.FullName, diffName));
 
-            DirectoryDiff loaded = DirectoryDiff.Load(Path.Combine(diffDir.FullName, diffName));
+        logger.LogInformation("Diff created: {Diff}", diffName);
 
-            TestDiffApply(previous, latest, loaded);
-        }
+        var loaded = DirectoryDiff.Load(Path.Combine(diffDir.FullName, diffName));
+
+        TestDiffApply(previous, latest, loaded);
     }
 
     private void TestDiffApply(DirectoryInfo previous, DirectoryInfo latest, DirectoryDiff diff)
@@ -127,6 +138,18 @@ public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorSer
 
     }
 
+    private VersionEntry? ParseVersionEntry(string folderName)
+    {
+        try
+        {
+            return new VersionEntry(folderName);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private void CopyDirectory(string source, string destination)
     {
         Directory.CreateDirectory(destination);
@@ -144,22 +167,6 @@ public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorSer
 
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             File.Copy(file, target, true);
-        }
-    }
-
-    private Version? ParseVersion(string folderName)
-    {
-        try
-        {
-            var normalized = folderName.Replace('_', '.');
-
-            return Version.TryParse(normalized, out var version)
-                ? version
-                : null;
-        }
-        catch
-        {
-            return null;
         }
     }
 }

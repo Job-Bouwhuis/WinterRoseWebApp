@@ -4,10 +4,12 @@
     <Project Path="ClientHub/WinterRose.ClientHub/WinterRose.ClientHub.csproj" Id="4ce63e2d-8e73-4ede-9c13-b3b777de9b9d" />
   </Folder>
   <Folder Name="/Utils/">
+    <Project Path="../WinterRose-Development/WinterRose.Recordium/WinterRose.Recordium.csproj" />
     <Project Path="ClientHub/Utils/HBOICT_Corp.Problems/WinterRose.Web.Problems.csproj" />
     <Project Path="ClientHub/Utils/HBOICT_Corp.Utils/WinterRose.Web.Utils.csproj" />
     <Project Path="ClientHub/Utils/HBOICT_Corp.Validation.Abstractions/WinterRose.Web.Validation.Abstractions.csproj" />
     <Project Path="ClientHub/Utils/HBOICT_Corp.Validation/WinterRose.Web.Validation.csproj" />
+    <Project Path="WinterRose.Web.Logging/WinterRose.Web.Logging.csproj" Id="4607bd27-6cab-444b-bfd6-ef1670c3a0b2" />
   </Folder>
   <Folder Name="/WinterForge/">
     <Project Path="../WinterRose.WinterForge/src/WinterRose.Reflection/WinterRose.Reflection.csproj" />

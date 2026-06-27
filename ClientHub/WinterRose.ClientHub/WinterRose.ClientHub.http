@@ -5,6 +5,6 @@ Accept: application/json
 
 ###
 GET {{WinterRose.ClientHub_HostAddress}}/apps
-Accept: application/json
+Accept: application/winterforge
 
 ###

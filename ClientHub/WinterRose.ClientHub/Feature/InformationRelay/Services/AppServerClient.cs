@@ -1,4 +1,6 @@
-﻿using WinterRoseWebApp.Features.FileUploads.Models;
+﻿using WinterRose.Web;
+using WinterRose.Web.Utils;
+using WinterRoseWebApp.Features.FileUploads.Models;
 
 namespace WinterRose.ClientHub.Feature.InformationRelay.Services;
 
@@ -9,19 +11,24 @@ public class AppServerClient
     public AppServerClient(HttpClient httpClient)
     {
         this.httpClient = httpClient;
+
+        this.httpClient.DefaultRequestHeaders.Accept.Clear();
+        this.httpClient.DefaultRequestHeaders.Accept.Add(
+            new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/winterforge")
+        );
     }
 
     public async Task<List<AppSummary>> GetAppSummariesAsync()
     {
         return await httpClient
-            .GetFromJsonAsync<List<AppSummary>>("apps/summaries")
+            .GetFromWinterForge<List<AppSummary>>("apps/summaries")
             .ConfigureAwait(false) ?? new List<AppSummary>();
     }
 
     public async Task<List<AppEntry>> GetAppEntriesAsync()
     {
         return await httpClient
-            .GetFromJsonAsync<List<AppEntry>>("apps")
+            .GetFromWinterForge<List<AppEntry>>("apps")
             .ConfigureAwait(false) ?? new List<AppEntry>();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using WinterRose.Web.Utils;
 using WinterRose.Web.Validation;
 using WinterRoseWebApp.Features.Api.Apps.Services;
 using WinterRoseWebApp.Features.FileUploads.Models;
@@ -7,6 +8,7 @@ namespace WinterRoseWebApp.Features.Api.Apps.Controllers;
 
 [ApiController]
 [Route("apps")]
+[UseWinterForge]
 public class AppsController : ControllerBase
 {
     private readonly AppRepository repo;
@@ -38,13 +40,13 @@ public class AppsController : ControllerBase
 
     public List<string> GetVersionsAsync(string appName, string? from, int? limit)
     {
-        var allVersions = repo.GetAppEntry(appName).Versions.Select(v => v.Version);
+        var allVersions = repo.GetAppEntry(appName).Versions;
 
         if (from != null)
         {
-            VersionEntry vers = new() { VersionLabel = from };
+            VersionEntry vers = new(from);
 
-            allVersions = allVersions.Where(v => v > vers.Version).ToList();
+            allVersions = allVersions.Where(v => v > vers).ToList();
         }
 
         if(limit is null)

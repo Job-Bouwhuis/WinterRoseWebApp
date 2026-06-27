@@ -10,13 +10,21 @@ using WinterRoseWebApp.Features.Dashboard.Services;
 using WinterRoseWebApp.Features.FileUploads.Endpoints;
 using WinterRoseWebApp.Features.FileUploads.Services;
 using WinterRoseWebApp.Features.Api.Apps.Services;
+using WinterRose.Web.Logging;
+using WinterRose.Web.Utils;
 
 internal class Program
 {
     private static void Main(string[] args)
     {
-        LogDestinations.AddDestination(new ConsoleLogDestination());
-        var builder = WebApplication.CreateBuilder(args);
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions()
+        {
+            Args = args,
+            ContentRootPath = AppContext.BaseDirectory
+        });
+        Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
+        builder.Logging.UseRecordiumLogger();
 
         // Add services to the container.
         builder.Services.AddRazorComponents()
@@ -62,7 +70,10 @@ internal class Program
             options.MultipartBodyLengthLimit = long.MaxValue;
         });
 
-        builder.Services.AddControllers();
+        builder.Services.AddControllers(options =>
+        {
+            options.OutputFormatters.Add(new WinterForgeOutputFormatter());
+        });
 
         var app = builder.Build();
 

@@ -40,7 +40,7 @@ public static class ServicesExtensions
             });
 
             services.AddScoped<IValidationStore, ValidationStore>();
-            services.AddScoped<TrackingJsonInputFormatter>();
+            services.AddSingleton<TrackingJsonInputFormatter>();
             services.AddTransient<IConfigureOptions<MvcOptions>, ConfigureMvcOptions>();
 
             Type interfaceType = typeof(IValidationDefinition<>);

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\WinterRose.WinterForge\src\WinterRose.WinterForge\WinterRose.WinterForge.csproj" />
     <ProjectReference Include="..\..\WinterRose.ClientHub.Shared\WinterRose.ClientHub.Shared.csproj" />
+    <ProjectReference Include="..\..\WinterRose.Web.Logging\WinterRose.Web.Logging.csproj" />
     <ProjectReference Include="..\Utils\HBOICT_Corp.Problems\WinterRose.Web.Problems.csproj" />
     <ProjectReference Include="..\Utils\HBOICT_Corp.Utils\WinterRose.Web.Utils.csproj" />
     <ProjectReference Include="..\Utils\HBOICT_Corp.Validation\WinterRose.Web.Validation.csproj" />
