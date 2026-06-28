@@ -1,11 +1,14 @@
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using WinterRose.Applications;
 using WinterRose.Applications.ApplicationInstanceLocks;
 using WinterRose.ClientHub.Feature.InformationRelay.Services;
 using WinterRose.ClientHub.Feature.Interface;
 using WinterRose.ClientHub.Feature.Interface.Windows;
+using WinterRose.ClientHub.Feature.Uri;
 using WinterRose.Configuration;
 using WinterRose.DependancyInjection;
 using WinterRose.Uris;
@@ -19,8 +22,9 @@ internal class Program
 
     private static void Main(string[] args)
     {
+        Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
         Config config = new("config/hub.txt");
-
+        
         ApplicationBuilder builder = App.CreateBuilder();
         
         builder.Services.AddHttpClient()
@@ -34,17 +38,41 @@ internal class Program
             });
         
         builder.Services.AddSingleton<App>();
-        builder.Services.AddSingleton<Gtk.Window, ApplicationStoreWindow>();
+        builder.Services.AddSingleton<IWindow, ApplicationStoreWindow>();
         builder.Services.AddSingleton<AppServerClient>();
         builder.Services.AddSingleton<GtkShell>();
         builder.Services.AddSingleton<UiManager>();
-        builder.Services.AddApplicationMutex();
-        builder.Services.AddSingleton<IUriBootstrapListener, LinuxUriBootstrapListener>();
-        builder.Services.AddSingleton<IUriBootstrapListener, WindowsUriBootstrapListener>();
-        builder.Services.AddSingleton<IUriForwarder, LinuxUriForwarder>();
-        builder.Services.AddSingleton<IUriForwarder, WindowsUriForwarder>();
-            
+        builder.Services.AddApplicationMutex("winterrose.hub");
+        builder.Services.AddSingleton<IUriHandler, Handler>();
+        builder.Services.AddUriListener("winterrose.hub", "winterrose", "WinterRose Hub");
+        
         App app = builder.Build<App>();
+
+        if (ValidateAppMutex(app, args)) 
+            return;
+
+        SetupListener(app);
+        
+        
         app.Run();
+    }
+
+    private static void SetupListener(App app)
+    {
+        app.BeginUriListener();
+    }
+
+    private static bool ValidateAppMutex(App app, string[] args)
+    {
+        var mutex = app.Services.Resolve<IApplicationMutex>();
+
+        if (!mutex.IsFirstInstance)
+        {
+            var forwarder = app.Services.Resolve<IUriForwarder>();
+            forwarder.ForwardAsync(args[0]).GetAwaiter().GetResult();
+            return true;
+        }
+
+        return false;
     }
 }

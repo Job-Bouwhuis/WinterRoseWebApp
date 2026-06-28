@@ -1,4 +1,4 @@
-﻿namespace WinterRoseWebApp.Features.FileUploads.Models;
+﻿namespace WinterRose.WebServer.Features.FileUploads.Models;
 
 /// <summary>
 /// One named upload (e.g. "MyApp"), containing all its versions and diffs.

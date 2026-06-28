@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\WinterRose.Applications.Abstractions\WinterRose.Applications.Abstractions.csproj" />
       <ProjectReference Include="..\WinterRose.DependancyInjection\WinterRose.DependancyInjection.csproj" />
     </ItemGroup>
 

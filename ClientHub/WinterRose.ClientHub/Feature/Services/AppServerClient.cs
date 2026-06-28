@@ -2,7 +2,7 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using WinterRose.Web;
-using WinterRoseWebApp.Features.FileUploads.Models;
+using WinterRose.WebServer.Features.FileUploads.Models;
 
 namespace WinterRose.ClientHub.Feature.InformationRelay.Services;
 

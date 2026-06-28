@@ -15,12 +15,6 @@ public class UiManager
     {
         this.shell = shell;
         this.windows = windows.ToDictionary(window => window.GetType());
-        StartUi();
-    }
-
-    public void StartUi()
-    {
-        shell.Start();
     }
 
     public void StopUi()

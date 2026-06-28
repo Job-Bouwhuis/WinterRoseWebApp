@@ -1,4 +1,4 @@
-﻿namespace WinterRoseWebApp.Features.FileUploads.Models;
+﻿namespace WinterRose.WebServer.Features.FileUploads.Models;
 
 /// <summary>
 /// A diff file, e.g. 1_0_0_TO_1_1_0 inside /Uploads/MyApp/Diffs/

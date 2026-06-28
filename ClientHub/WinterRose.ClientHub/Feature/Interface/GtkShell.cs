@@ -7,6 +7,11 @@ public class GtkShell
 {
     private bool initialized;
 
+    public GtkShell()
+    {
+        Start();
+    }
+    
     public void Start()
     {
         if (initialized)

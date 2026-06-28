@@ -6,11 +6,13 @@ namespace WinterRose.DependancyInjection;
 public class ServiceCollection : IServiceProvider
 {
     private readonly Dictionary<Type, List<ServiceDescriptor>> descriptors;
-    private readonly Dictionary<Type, object> singletons = new Dictionary<Type, object>();
+    private readonly List<ServiceFactoryDescriptor> factoryDescriptors;
+    private readonly Dictionary<Type, object> singletons = new();
 
-    public ServiceCollection(List<ServiceDescriptor> descriptors)
+    public ServiceCollection(List<ServiceDescriptor> descriptors, List<ServiceFactoryDescriptor> factoryDescriptors)
     {
         this.descriptors = new Dictionary<Type, List<ServiceDescriptor>>();
+        this.factoryDescriptors = factoryDescriptors;
 
         foreach (ServiceDescriptor descriptor in descriptors)
         {
@@ -32,11 +34,34 @@ public class ServiceCollection : IServiceProvider
         singletons[serviceProvider.ServiceType] = this;
     }
 
+    public void Initialize()
+    {
+        var selfInitiated = descriptors
+            .SelectMany(x => x.Value)
+            .Where(x => x.SelfInitiated);
+        foreach (ServiceDescriptor descriptor in selfInitiated)
+        {
+            try
+            {
+                if(descriptor.SelfInitiated)
+                    ResolveSpecificImplementation(descriptor.ServiceType, descriptor.ImplementationType, new ResolutionContext(this));
+            }
+            catch (Exception e)
+            {
+                throw new ServiceProviderException(
+                    $"Service of type {descriptor.ImplementationType.Name} was configured to be constructed immediately, but failed. " +
+                    $"see inner exception for details", 
+                    e);
+            }
+                
+        }
+    }
+
     public IEnumerable<T> ResolveAll<T>()
     {
         ResolutionContext context = new ResolutionContext(this);
 
-        foreach (ServiceDescriptor descriptor in GetDescriptors(typeof(T)))
+        foreach (ServiceDescriptor descriptor in GetDescriptors(typeof(T), context))
         {
             yield return (T)ResolveFromDescriptor(
                 typeof(T),
@@ -49,8 +74,8 @@ public class ServiceCollection : IServiceProvider
     {
         return (T)Resolve(typeof(T), new ResolutionContext(this));
     }
-    
-    private T Resolve<T>(ResolutionContext context) =>  (T)Resolve(typeof(T), context);
+
+    private T Resolve<T>(ResolutionContext context) => (T)Resolve(typeof(T), context);
 
     public object Resolve(Type type)
     {
@@ -61,6 +86,7 @@ public class ServiceCollection : IServiceProvider
     {
         if (context.ResolutionStack.Contains(type))
         {
+            var chain = string.Join(" -> ", context.ResolutionStack.Reverse().Select(t => t.Name));
             throw new InvalidOperationException(
                 $"Circular dependency detected while resolving {type.FullName}"
             );
@@ -76,9 +102,7 @@ public class ServiceCollection : IServiceProvider
             if (context.ScopedInstances.TryGetValue(type, out object scopedInstance))
                 return scopedInstance;
 
-            List<ServiceDescriptor> descriptors = GetDescriptors(type)
-                .Where(d => d.IsCompatible(Resolve<IOSEnvironment>(context)))
-                .ToList();
+            List<ServiceDescriptor> descriptors = GetDescriptors(type, context);
             ServiceDescriptor constructionDescriptor;
 
             if (descriptors.Count == 0)
@@ -86,6 +110,17 @@ public class ServiceCollection : IServiceProvider
                 if (TryGetGenericDescriptor(type, out constructionDescriptor))
                 {
                     // open generic resolved
+                }
+                else if (TryGetFactoryDescriptor(type, out ServiceFactoryDescriptor fd))
+                {
+                    object inst = fd.Factory(this);
+
+                    if (fd.Lifetime == ServiceLifetime.Singleton)
+                        SetSingleton(type, inst);
+                    else if (fd.Lifetime == ServiceLifetime.Scoped)
+                        context.ScopedInstances[type] = inst;
+
+                    return inst;
                 }
                 else if (!type.IsAbstract)
                 {
@@ -152,10 +187,11 @@ public class ServiceCollection : IServiceProvider
             context.ResolutionStack.Pop();
         }
     }
-    
+
     private void ApplyActivation(object instance, Type serviceType, ServiceDescriptor constructionDescriptor)
     {
-        IEnumerable<ServiceDescriptor> activationDescriptors = GetActivationDescriptors(serviceType, constructionDescriptor);
+        IEnumerable<ServiceDescriptor> activationDescriptors =
+            GetActivationDescriptors(serviceType, constructionDescriptor);
 
         foreach (ServiceDescriptor activationDescriptor in activationDescriptors)
         {
@@ -165,8 +201,9 @@ public class ServiceCollection : IServiceProvider
             }
         }
     }
-    
-    private IEnumerable<ServiceDescriptor> GetActivationDescriptors(Type serviceType, ServiceDescriptor constructionDescriptor)
+
+    private IEnumerable<ServiceDescriptor> GetActivationDescriptors(Type serviceType,
+        ServiceDescriptor constructionDescriptor)
     {
         if (!this.descriptors.TryGetValue(serviceType, out List<ServiceDescriptor> descriptors))
             yield break;
@@ -185,12 +222,14 @@ public class ServiceCollection : IServiceProvider
 
         if (constructors.Length == 0)
         {
-            throw new InvalidOperationException(
-                $"No public constructors found for {implementationType.FullName}"
-            );
+            // throw new InvalidOperationException(
+            //     $"No public constructors found for {implementationType.FullName}"
+            // );
         }
 
         List<ConstructorInfo> validConstructors = new List<ConstructorInfo>();
+        Dictionary<ConstructorInfo, (Type parameterType, string reason)> invalidReasons =
+            new Dictionary<ConstructorInfo, (Type, string)>();
 
         foreach (ConstructorInfo constructor in constructors)
         {
@@ -203,8 +242,10 @@ public class ServiceCollection : IServiceProvider
                 continue;
             }
 
-            // 2. check if ALL parameters are resolvable (registered OR auto-constructable)
+            // 2. check if ALL parameters are resolvable
             bool isValid = true;
+            Type firstInvalidParam = null;
+            string reason = null;
 
             foreach (ParameterInfo parameter in parameters)
             {
@@ -213,6 +254,8 @@ public class ServiceCollection : IServiceProvider
                 if (!CanResolve(parameterType, context))
                 {
                     isValid = false;
+                    firstInvalidParam = parameterType;
+                    reason = $"Parameter '{parameter.Name}' of type '{parameterType.Name}' cannot be resolved";
                     break;
                 }
             }
@@ -221,14 +264,42 @@ public class ServiceCollection : IServiceProvider
             {
                 validConstructors.Add(constructor);
             }
+            else
+            {
+                invalidReasons[constructor] = (firstInvalidParam, reason);
+            }
         }
 
         if (validConstructors.Count == 0)
         {
-            throw new InvalidOperationException(
-                $"No valid constructor found for {implementationType.FullName}. " +
-                $"None of the constructors can be fully satisfied from registered services."
-            );
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine(BuildDependencyChainMessage(context, implementationType));
+            sb.AppendLine();
+            sb.AppendLine($"No valid constructor found for {implementationType.FullName}:");
+
+            foreach (var constructor in constructors)
+            {
+                sb.Append($"  - {constructor.Name}(");
+                var parameters = constructor.GetParameters();
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    if (i > 0) sb.Append(", ");
+                    sb.Append($"{parameters[i].ParameterType.Name} {parameters[i].Name}");
+                }
+
+                sb.Append(")");
+
+                if (invalidReasons.TryGetValue(constructor, out var reason))
+                {
+                    sb.AppendLine($" ❌ {reason.reason}");
+                }
+                else
+                {
+                    sb.AppendLine(" ✅");
+                }
+            }
+
+            throw new InvalidOperationException(sb.ToString());
         }
 
         // pick "best" valid constructor (most parameters = most expressive)
@@ -327,7 +398,7 @@ public class ServiceCollection : IServiceProvider
         Type implementationType,
         ResolutionContext context)
     {
-        foreach (ServiceDescriptor descriptor in GetDescriptors(serviceType))
+        foreach (ServiceDescriptor descriptor in GetDescriptors(serviceType, context))
         {
             if (descriptor.ImplementationType != implementationType)
                 continue;
@@ -344,9 +415,7 @@ public class ServiceCollection : IServiceProvider
         Type implementationType,
         ResolutionContext context)
     {
-        List<ServiceDescriptor> descriptors = GetDescriptors(serviceType)
-            .Where(d => d.IsCompatible(Resolve<IOSEnvironment>(context)))
-            .ToList();
+        List<ServiceDescriptor> descriptors = GetDescriptors(serviceType, context);
 
         if (descriptors.Count == 0)
         {
@@ -386,7 +455,7 @@ public class ServiceCollection : IServiceProvider
         Type serviceType,
         ResolutionContext context)
     {
-        foreach (ServiceDescriptor descriptor in GetDescriptors(serviceType))
+        foreach (ServiceDescriptor descriptor in GetDescriptors(serviceType, context))
         {
             yield return ResolveFromDescriptor(
                 serviceType,
@@ -429,6 +498,34 @@ public class ServiceCollection : IServiceProvider
         return instance;
     }
 
+    private bool TryGetFactoryDescriptor(
+        Type requestedType,
+        out ServiceFactoryDescriptor factoryDescriptor)
+    {
+        factoryDescriptor = null!;
+
+        foreach (ServiceFactoryDescriptor fd in factoryDescriptors)
+        {
+            // exact match — covers non-generic types and closed generics
+            if (fd.ServiceType == requestedType)
+            {
+                factoryDescriptor = fd;
+                return true;
+            }
+
+            // open generic match — e.g. ILogger<> matches ILogger<OrderService>
+            if (fd.ServiceType.IsGenericTypeDefinition &&
+                requestedType.IsGenericType &&
+                fd.ServiceType == requestedType.GetGenericTypeDefinition())
+            {
+                factoryDescriptor = fd;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private bool TryGetGenericDescriptor(Type requestedType, out ServiceDescriptor descriptor)
     {
         descriptor = null;
@@ -458,27 +555,15 @@ public class ServiceCollection : IServiceProvider
 
     private bool CanResolve(Type type, ResolutionContext context)
     {
-        if (type.IsArray)
-            return true;
-
-        if (type.IsGenericType &&
-            type.GetGenericTypeDefinition() == typeof(List<>))
-            return true;
-
-        if (TryGetSingleton(type, out _))
-            return true;
-
-        if (context.ScopedInstances.ContainsKey(type))
-            return true;
-
-        if (this.descriptors.TryGetValue(type, out List<ServiceDescriptor> descriptors) &&
-            descriptors.Count > 0)
-            return true;
-
-        if (TryGetGenericDescriptor(type, out _))
-            return true;
-
-        return !type.IsAbstract;
+        if (type.IsArray) return CanResolve(type.GetElementType(), context);
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+            return CanResolve(type.GetGenericArguments()[0], context);
+        if (TryGetSingleton(type, out _)) return true;
+        if (context.ScopedInstances.ContainsKey(type)) return true;
+        if (descriptors.TryGetValue(type, out var dl) && dl.Count > 0) return true;
+        if (TryGetGenericDescriptor(type, out _)) return true;
+        if (TryGetFactoryDescriptor(type, out _)) return true;
+        return false;
     }
 
     internal bool TryGetDescriptors(Type type, out List<ServiceDescriptor> descriptors)
@@ -491,10 +576,17 @@ public class ServiceCollection : IServiceProvider
         return singletons.TryGetValue(type, out instance);
     }
 
-    private List<ServiceDescriptor> GetDescriptors(Type type)
+    private List<ServiceDescriptor> GetDescriptors(Type type, ResolutionContext ctx)
     {
         if (this.descriptors.TryGetValue(type, out List<ServiceDescriptor> descriptors))
-            return descriptors;
+        {
+            if (type == typeof(IOSEnvironment))
+                return descriptors;
+
+            return descriptors.Where(d => d.IsCompatible(Resolve<IOSEnvironment>(ctx)))
+                .ToList();
+            ;
+        }
 
         return new List<ServiceDescriptor>();
     }
@@ -503,4 +595,28 @@ public class ServiceCollection : IServiceProvider
     {
         singletons[type] = instance;
     }
+
+    private string BuildDependencyChainMessage(ResolutionContext context, Type failedType)
+    {
+        // Get the current resolution stack as a list
+        var chain = context.ResolutionStack.Reverse().ToList();
+
+        // Build the message from the bottom up
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Cannot create service '{failedType.Name}' because no constructors are valid:");
+
+        // Show the full chain from the root cause
+        for (int i = chain.Count - 1; i >= 0; i--)
+        {
+            var type = chain[i];
+            sb.AppendLine($"  while creating {type.Name}");
+        }
+
+        // Show the failed type at the end
+        sb.AppendLine($"  -> failed at {failedType.Name}");
+
+        return sb.ToString();
+    }
 }
+
+public class ServiceProviderException(string message, Exception exception) : Exception(message, exception);

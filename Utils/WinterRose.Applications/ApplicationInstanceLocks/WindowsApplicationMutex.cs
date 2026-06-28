@@ -4,15 +4,14 @@ using WinterRose.DependancyInjection;
 namespace WinterRose.Applications.ApplicationInstanceLocks;
 
 [WindowsOnly]
-public sealed class WindowsApplicationMutex : IApplicationMutex
+internal sealed class WindowsApplicationMutex : IApplicationMutex
 {
     private readonly Mutex MUTEX;
     public bool IsFirstInstance { get; }
 
-    public WindowsApplicationMutex(string appId)
+    public WindowsApplicationMutex(MutexOptions options)
     {
-        bool createdNew;
-        MUTEX = new Mutex(true, $"Global\\{appId}", out createdNew);
+        MUTEX = new Mutex(true, $"Global\\{options.AppId}", out bool createdNew);
         IsFirstInstance = createdNew;
     }
 

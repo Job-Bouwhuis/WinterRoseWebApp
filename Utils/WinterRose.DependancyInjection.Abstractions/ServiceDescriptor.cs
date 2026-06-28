@@ -9,17 +9,20 @@ public class ServiceDescriptor
     public Type ImplementationType { get; set; }
 
     public ServiceLifetime Lifetime { get; set; }
+    public bool SelfInitiated { get; private set; }
 
     public List<Action<object>> Configurators { get; } = [];
 
     public ServiceDescriptor(
         Type serviceType,
         Type implementationType,
-        ServiceLifetime lifetime)
+        ServiceLifetime lifetime,
+        bool selfInitiated = false)
     {
         ServiceType = serviceType;
         ImplementationType = implementationType;
         Lifetime = lifetime;
+        SelfInitiated = selfInitiated;
     }
     
     public bool IsCompatible(IOSEnvironment os)

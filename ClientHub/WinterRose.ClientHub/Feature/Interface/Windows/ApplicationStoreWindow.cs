@@ -6,12 +6,12 @@ using Gdk;
 using Gtk;
 using WinterRose.ClientHub.Feature.InformationRelay.Services;
 using WinterRose.Web;
-using WinterRoseWebApp.Features.FileUploads.Models;
+using WinterRose.WebServer.Features.FileUploads.Models;
 using Window = Gtk.Window;
 
 namespace WinterRose.ClientHub.Feature.Interface.Windows;
 
-public class ApplicationStoreWindow : Window
+public class ApplicationStoreWindow : Window, IWindow
 {
     private readonly AppServerClient server;
     private ListBox appList = null!;

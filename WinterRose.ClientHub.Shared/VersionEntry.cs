@@ -1,4 +1,4 @@
-﻿namespace WinterRoseWebApp.Features.FileUploads.Models;
+﻿namespace WinterRose.WebServer.Features.FileUploads.Models;
 
 public enum VersionStringFormat
 {

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using WinterRose.Applications;
 using WinterRose.ClientHub.Feature.Interface;
 using WinterRose.ClientHub.Feature.Interface.Windows;
+using WinterRose.DependancyInjection.Logging;
 
 namespace WinterRose.ClientHub;
 
@@ -25,7 +26,7 @@ internal class App : Application
     private readonly UiManager uiManager;
     private Task ipcServerTask;
 
-    public App(UiManager uiManager)
+    public App(UiManager uiManager, ILogger<App> logger)
     {
         this.uiManager = uiManager;
     }

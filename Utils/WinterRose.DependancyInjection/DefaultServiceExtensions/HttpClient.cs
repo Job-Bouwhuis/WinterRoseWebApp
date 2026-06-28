@@ -4,9 +4,9 @@ using System.Net.Http;
 
 public static class HttpClientServiceExtensions
 {
-    extension(ServiceBuilder builder)
+    extension(IServiceBuilder builder)
     {
-        public ServiceBuilder AddHttpClient()
+        public IServiceBuilder AddHttpClient()
         {
             builder.AddSingleton<HttpClient>();
             return builder;

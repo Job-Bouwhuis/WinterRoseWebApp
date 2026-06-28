@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using WinterRose.DependancyInjection;
 using IServiceProvider = System.IServiceProvider;
 
@@ -9,14 +10,14 @@ namespace WinterRose.Applications;
 
 public class ApplicationBuilder
 {
-    private Func<DependancyInjection.IServiceProvider, Application>? APPLICATION_FACTORY;
-    private ServiceBuilder ServiceBuilder = new ServiceBuilder();
-    public ServiceBuilder Services => ServiceBuilder;
+    private Func<DependancyInjection.IServiceProvider, Application>? applicationFactory;
+    private IServiceBuilder serviceBuilder = new ServiceBuilder();
+    public IServiceBuilder Services => serviceBuilder;
 
     public ApplicationBuilder UseApplication<TApplication>()
         where TApplication : Application
     {
-        APPLICATION_FACTORY = provider =>
+        applicationFactory = provider =>
         {
             ConstructorInfo constructor = typeof(TApplication)
                 .GetConstructors()
@@ -38,13 +39,21 @@ public class ApplicationBuilder
     
     public Application Build()
     {
-        DependancyInjection.IServiceProvider services = ServiceBuilder.Build();
+        Application app = null;
+        serviceBuilder.AddFactory<CancellationToken>(services =>
+        {
+            return app!.cancelSource.Token;
+        }, ServiceLifetime.Transient);
         
-        if (APPLICATION_FACTORY == null)
+        DependancyInjection.IServiceProvider services = serviceBuilder.Build();
+        
+        if (applicationFactory == null)
             throw new InvalidOperationException("No Application type configured.");
-
-        Application app = APPLICATION_FACTORY(services);
-
+        
+        app = applicationFactory(services);
+        app.Services = services;
+        services.Initialize();
+        
         return app;
     }
 }

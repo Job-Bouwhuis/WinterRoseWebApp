@@ -1,6 +1,11 @@
 <Solution>
-  <Folder Name="/ClientHub/">
+  <Folder Name="/Apps/">
     <Project Path="ClientHub/WinterRose.ClientHub/WinterRose.ClientHub.csproj" Id="4ce63e2d-8e73-4ede-9c13-b3b777de9b9d" />
+    <Project Path="WinterRose.ClientHub.Shared/WinterRose.ClientHub.Shared.csproj" Id="76d36d3d-298c-4a50-ba69-436d0de5aa57" />
+    <Project Path="WinterRose.WebServer\WinterRose.WebServer.csproj" />
+  </Folder>
+  <Folder Name="/Diffing/">
+    <Project Path="../WinterRose-Development/WinterRose.Diff/WinterRose.Diff.csproj" />
   </Folder>
   <Folder Name="/Utils/">
     <Project Path="../WinterRose-Development/WinterRose.Recordium/WinterRose.Recordium.csproj" />
@@ -8,6 +13,7 @@
     <Project Path="ClientHub/Utils/HBOICT_Corp.Utils/WinterRose.Web.Utils.csproj" />
     <Project Path="ClientHub/Utils/HBOICT_Corp.Validation.Abstractions/WinterRose.Web.Validation.Abstractions.csproj" />
     <Project Path="ClientHub/Utils/HBOICT_Corp.Validation/WinterRose.Web.Validation.csproj" />
+    <Project Path="Utils/WinterRose.Applications.Abstractions/WinterRose.Applications.Abstractions.csproj" />
     <Project Path="Utils/WinterRose.Applications/WinterRose.Applications.csproj" />
     <Project Path="Utils/WinterRose.Configuration/WinterRose.Configuration.csproj" />
     <Project Path="Utils/WinterRose.DependancyInjection.Abstractions/WinterRose.DependancyInjection.Abstractions.csproj" />
@@ -21,7 +27,4 @@
     <Project Path="../WinterRose.WinterForge/src/WinterRose.Reflection/WinterRose.Reflection.csproj" />
     <Project Path="../WinterRose.WinterForge/src/WinterRose.WinterForge/WinterRose.WinterForge.csproj" />
   </Folder>
-  <Project Path="../WinterRose-Development/WinterRose.Diff/WinterRose.Diff.csproj" />
-  <Project Path="WinterRose.ClientHub.Shared/WinterRose.ClientHub.Shared.csproj" Id="76d36d3d-298c-4a50-ba69-436d0de5aa57" />
-  <Project Path="WinterRoseWebApp/WinterRoseWebApp.csproj" />
 </Solution>

@@ -2,5 +2,5 @@ namespace WinterRose.Uris;
 
 public interface IUriBootstrapListener
 {
-    void StartListening(Action<string> onUri);
+    void StartListening(Func<string, Task> onUri, CancellationToken ct);
 }

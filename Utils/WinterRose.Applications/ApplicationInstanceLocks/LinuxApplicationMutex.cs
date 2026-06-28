@@ -4,14 +4,14 @@ using WinterRose.DependancyInjection;
 namespace WinterRose.Applications.ApplicationInstanceLocks;
 
 [LinuxOnly]
-public sealed class LinuxApplicationMutex : IApplicationMutex
+internal sealed class LinuxApplicationMutex : IApplicationMutex
 {
     private readonly FileStream? lockFile;
     public bool IsFirstInstance { get; }
 
-    public LinuxApplicationMutex(string appId)
+    public LinuxApplicationMutex(MutexOptions options)
     {
-        string path = $"/tmp/{appId}.lock";
+        string path = $"/tmp/{options.AppId}.lock";
 
         try
         {

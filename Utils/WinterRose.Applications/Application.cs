@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Threading;
+using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
 
 namespace WinterRose.Applications;
 
-public abstract class Application
+public abstract class Application : IApplication
 {
-    private CancellationTokenSource? cancelSource;
+    protected internal CancellationTokenSource cancelSource = new CancellationTokenSource();
+    public IServiceProvider Services { get; set; }
+    
     private Task? runningTask;
 
+    public bool IsRunning { get; private set; }
+    
     public void Run()
     {
-        cancelSource = new CancellationTokenSource();
-
         Console.CancelKeyPress += (sender, args) => cancelSource.Cancel();
         
         InvokeStarting();
@@ -62,7 +65,7 @@ public abstract class Application
     protected virtual void OnStarting() { }
     protected virtual void OnStopping() { }
 
-    protected bool IsRunning { get; private set; }
+
 
     private void SetRunning(bool running)
     {

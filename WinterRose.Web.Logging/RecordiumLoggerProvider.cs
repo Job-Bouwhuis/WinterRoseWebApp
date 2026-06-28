@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using WinterRose.Recordium;
-using RLog = WinterRose.Recordium.Log;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace WinterRose.Web.Logging;
 
@@ -47,11 +47,11 @@ public sealed class RecordiumLoggerProvider : ILoggerProvider
 
 internal sealed class RecordiumLogger : ILogger
 {
-    private readonly RLog logger;
+    private readonly Log logger;
 
     public RecordiumLogger(string category)
     {
-        this.logger = RLog.GetLogger(category);
+        this.logger = Recordium.Log.GetLogger(category);
     }
     
     public IDisposable? BeginScope<TState>(TState state)
