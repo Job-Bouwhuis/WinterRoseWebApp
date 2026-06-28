@@ -1,6 +1,5 @@
 <Solution>
   <Folder Name="/ClientHub/">
-    <Project Path="ClientHub/WinterRose.ClientHub.Interface/WinterRose.ClientHub.Interface.csproj" Id="9ab07707-b194-4032-a69f-4f6fcd11e735" />
     <Project Path="ClientHub/WinterRose.ClientHub/WinterRose.ClientHub.csproj" Id="4ce63e2d-8e73-4ede-9c13-b3b777de9b9d" />
   </Folder>
   <Folder Name="/Utils/">
@@ -9,6 +8,13 @@
     <Project Path="ClientHub/Utils/HBOICT_Corp.Utils/WinterRose.Web.Utils.csproj" />
     <Project Path="ClientHub/Utils/HBOICT_Corp.Validation.Abstractions/WinterRose.Web.Validation.Abstractions.csproj" />
     <Project Path="ClientHub/Utils/HBOICT_Corp.Validation/WinterRose.Web.Validation.csproj" />
+    <Project Path="Utils/WinterRose.Applications/WinterRose.Applications.csproj" />
+    <Project Path="Utils/WinterRose.Configuration/WinterRose.Configuration.csproj" />
+    <Project Path="Utils/WinterRose.DependancyInjection.Abstractions/WinterRose.DependancyInjection.Abstractions.csproj" />
+    <Project Path="Utils/WinterRose.DependancyInjection/WinterRose.DependancyInjection.csproj" />
+    <Project Path="Utils/WinterRose.OSEnvironments/WinterRose.OSEnvironments.csproj" />
+    <Project Path="Utils/WinterRose.Uris.Abstractions/WinterRose.Uris.Abstractions.csproj" />
+    <Project Path="Utils/WinterRose.Uris/WinterRose.Uris.csproj" />
     <Project Path="WinterRose.Web.Logging/WinterRose.Web.Logging.csproj" Id="4607bd27-6cab-444b-bfd6-ef1670c3a0b2" />
   </Folder>
   <Folder Name="/WinterForge/">

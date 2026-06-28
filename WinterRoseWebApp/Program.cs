@@ -2,16 +2,17 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using WinterRose.Recordium;
-using WinterRoseWebApp.Features;
+using WinterRose.Web.Logging;
+using WinterRose.Web.Utils;
 using WinterRoseWebApp.Data;
+using WinterRoseWebApp.Features;
 using WinterRoseWebApp.Features.Account;
+using WinterRoseWebApp.Features.Api.Apps.Services;
 using WinterRoseWebApp.Features.Dashboard.Services;
 using WinterRoseWebApp.Features.FileUploads.Endpoints;
 using WinterRoseWebApp.Features.FileUploads.Services;
-using WinterRoseWebApp.Features.Api.Apps.Services;
-using WinterRose.Web.Logging;
-using WinterRose.Web.Utils;
+
+namespace WinterRoseWebApp;
 
 internal class Program
 {
@@ -43,7 +44,7 @@ internal class Program
 
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseSqlite(connectionString));
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
         builder.Services.AddIdentityCore<ApplicationUser>(options =>

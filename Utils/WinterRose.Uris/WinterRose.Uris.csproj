@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\WinterRose.DependancyInjection.Abstractions\WinterRose.DependancyInjection.Abstractions.csproj" />
+      <ProjectReference Include="..\WinterRose.Uris.Abstractions\WinterRose.Uris.Abstractions.csproj" />
+    </ItemGroup>
+
+</Project>

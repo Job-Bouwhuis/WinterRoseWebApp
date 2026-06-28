@@ -1,52 +1,50 @@
-using Microsoft.Extensions.Logging.Console;
+using System;
+using System.Diagnostics;
+using System.Net.Http;
+using WinterRose.Applications;
+using WinterRose.Applications.ApplicationInstanceLocks;
 using WinterRose.ClientHub.Feature.InformationRelay.Services;
-using WinterRose.Web.Logging;
-using WinterRose.Web.Problems;
-using WinterRose.Web.Utils;
-using WinterRose.Web.Validation.Middleware;
+using WinterRose.ClientHub.Feature.Interface;
+using WinterRose.ClientHub.Feature.Interface.Windows;
+using WinterRose.Configuration;
+using WinterRose.DependancyInjection;
+using WinterRose.Uris;
+using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
+
+namespace WinterRose.ClientHub;
 
 internal class Program
 {
+    private static App host;
+
     private static void Main(string[] args)
     {
-        var builder = WebApplication.CreateBuilder(new WebApplicationOptions()
-        {
-            Args = args,
-            ContentRootPath = AppContext.BaseDirectory
-        });
-        Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+        Config config = new("config/hub.txt");
 
-        builder.Logging.UseRecordiumLogger();
-
-        builder.Services.AddValidation();
-        builder.Services.AddGracefulProblemDetails();
-
-        builder.Services.AddHttpClient<AppServerClient>(client =>
-        {
-            client.BaseAddress = new Uri(builder.Configuration["AppServer:BaseUrl"]
-                    ?? throw new InvalidOperationException("AppServer:BaseUrl configuration is missing"));
-        });
-
-
-        builder.Services.AddControllers(options =>
-        {
-            options.OutputFormatters.Add(new WinterForgeOutputFormatter());
-        });
-
-        var app = builder.Build();
-
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
-        {
-            app.MapOpenApi();
-        }
-
-        app.UseHttpsRedirection();
-
-        app.UseAuthorization();
-
-        app.MapControllers();
-
+        ApplicationBuilder builder = App.CreateBuilder();
+        
+        builder.Services.AddHttpClient()
+            .Configure<HttpClient>(client =>
+            {
+                client.BaseAddress = new System.Uri(config.Get<string>("ServerUri"));
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(
+                    new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/winterforge")
+                );
+            });
+        
+        builder.Services.AddSingleton<App>();
+        builder.Services.AddSingleton<Gtk.Window, ApplicationStoreWindow>();
+        builder.Services.AddSingleton<AppServerClient>();
+        builder.Services.AddSingleton<GtkShell>();
+        builder.Services.AddSingleton<UiManager>();
+        builder.Services.AddApplicationMutex();
+        builder.Services.AddSingleton<IUriBootstrapListener, LinuxUriBootstrapListener>();
+        builder.Services.AddSingleton<IUriBootstrapListener, WindowsUriBootstrapListener>();
+        builder.Services.AddSingleton<IUriForwarder, LinuxUriForwarder>();
+        builder.Services.AddSingleton<IUriForwarder, WindowsUriForwarder>();
+            
+        App app = builder.Build<App>();
         app.Run();
     }
 }
