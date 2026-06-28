@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using WinterRose.DependancyInjection;
+using WinterRose.ForgeThread;
 using IServiceProvider = System.IServiceProvider;
 
 namespace WinterRose.Applications;
@@ -17,7 +18,7 @@ public class ApplicationBuilder
     public ApplicationBuilder UseApplication<TApplication>()
         where TApplication : Application
     {
-        applicationFactory = provider =>
+        applicationFactory = services =>
         {
             ConstructorInfo constructor = typeof(TApplication)
                 .GetConstructors()
@@ -26,7 +27,7 @@ public class ApplicationBuilder
 
             object[] args = constructor
                 .GetParameters()
-                .Select(p => provider.Resolve(p.ParameterType))
+                .Select(p => services.Resolve(p.ParameterType))
                 .ToArray();
 
             return (Application)constructor.Invoke(args);
@@ -44,6 +45,10 @@ public class ApplicationBuilder
         {
             return app!.cancelSource.Token;
         }, ServiceLifetime.Transient);
+
+        serviceBuilder.AddFactory<IApplication>(services => app!, ServiceLifetime.Transient);
+        
+        serviceBuilder.AddSingleton<ThreadLoom>();
         
         DependancyInjection.IServiceProvider services = serviceBuilder.Build();
         

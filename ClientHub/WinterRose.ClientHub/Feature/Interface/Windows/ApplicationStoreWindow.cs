@@ -1,17 +1,19 @@
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Gdk;
 using Gtk;
+using WinterRose.Applications;
 using WinterRose.ClientHub.Feature.InformationRelay.Services;
-using WinterRose.Web;
+using WinterRose.ForgeThread;
 using WinterRose.WebServer.Features.FileUploads.Models;
-using Window = Gtk.Window;
+using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
 
 namespace WinterRose.ClientHub.Feature.Interface.Windows;
 
-public class ApplicationStoreWindow : Window, IWindow
+public class ApplicationStoreWindow : WindowBase
 {
     private readonly AppServerClient server;
     private ListBox appList = null!;
@@ -21,43 +23,27 @@ public class ApplicationStoreWindow : Window, IWindow
     private Revealer sidebar = null!;
 
     private List<AppEntry> apps = new();
-
+    
     private AppEntry? selectedApp;
     private VersionEntry? selectedVersion;
-    private bool windowBuilt = false;
 
     private Task? dataRefreshTask;
     
-    public ApplicationStoreWindow(AppServerClient server) : base("WinterHub")
+    public ApplicationStoreWindow(AppServerClient server, IServiceProvider services) : base("WinterHub", services)
     {
         this.server = server;
-        DefaultWidth = 900;
-        DefaultHeight = 550;
-        WindowPosition = WindowPosition.Center;
     }
     
-    public async Task Show()
+    protected override void OnShown()
     {
-        EnsureWindow();
-        
-        if(dataRefreshTask == null)
-            dataRefreshTask = RefreshAsync();
-
-        Present();
-    }
-
-    public void Hide()
-    {
-        Hide();
-    }
-
-    private void EnsureWindow()
-    {
-        if (windowBuilt)
-            return;
-
-        BuildWindow();
-        windowBuilt = true;
+        base.OnShown();
+        Invoke(() =>
+        {
+            DefaultWidth = 900;
+            DefaultHeight = 550;
+            WindowPosition = WindowPosition.Center;
+        });
+        dataRefreshTask ??= RefreshAsync();
     }
 
     private async Task RefreshAsync()
@@ -69,11 +55,10 @@ public class ApplicationStoreWindow : Window, IWindow
     protected override bool OnDeleteEvent(Event evnt)
     {
         Hide();
-
         return true;
     }
 
-    private void BuildWindow()
+    protected override void BuildWindow()
     {
         Box root = new Box(Orientation.Horizontal, 8);
         root.BorderWidth = 10;
@@ -365,12 +350,12 @@ public class ApplicationStoreWindow : Window, IWindow
 
             sidebar.RevealChild = false;
 
-            PopulateApplicationList();
+            Invoke(PopulateApplicationList);
         }
         catch (Exception ex)
         {
             apps.Clear();
-            PopulateApplicationList();
+            Invoke(PopulateApplicationList);
 
             Console.WriteLine(ex);
         }

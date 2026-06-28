@@ -6,6 +6,9 @@ public sealed class UriQuery
 {
     private readonly Dictionary<string, string> VALUES = [];
 
+    public int Count => VALUES.Count;
+    public IReadOnlyList<string> Keys => VALUES.Keys.ToList();
+    
     public string this[string key]
     {
         get => VALUES.TryGetValue(key, out string value) ? value : null;
