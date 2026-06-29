@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
+using Eto.Drawing;
 using WinterRose.Applications;
 using WinterRose.Applications.ApplicationInstanceLocks;
 using WinterRose.ClientHub;
@@ -24,7 +25,7 @@ _ = typeof(ByteArrayValueProvider);
 App host = null;
 
 // this is for testing purposes.
-//args = ["winterrose://show-window"];
+args = ["winterrose://show-window"];
 
 ServiceBuilder lockServicesBuilder = new ServiceBuilder();
 lockServicesBuilder.AddApplicationMutex("winterrose.hub");
@@ -80,6 +81,8 @@ builder.Services.AddSingleton<MainThread>();
 builder.Services.AddSingleton<ApplicationInstaller>();
 builder.Services.AddSingleton<ClientAppRepository>();
 
+builder.Services.AddSingleton<AppTray>();
+
 // adds linux and windows variants of the Uri services which the DI container resolves for whatever OS the
 // app runs on
 builder.Services.AddUriListener("winterrose.hub", "winterrose", "WinterRose Hub");
@@ -98,12 +101,9 @@ if (args.Length > 0)
     });
 }
 
+app.Services.Resolve<AppTray>().Initialize(new Bitmap("SnowOwlLogo.jpg"));
+
 app.Run();
 
 await app.DisposeAsync();
 lockServices.Dispose();
-
-bool ValidateAppMutex(ServiceCollection services, string[] args)
-{
-    return false;
-}

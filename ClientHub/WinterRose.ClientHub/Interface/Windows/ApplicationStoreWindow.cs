@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Eto.Drawing;
 using Eto.Forms;
 using WinterRose.Applications;
+using WinterRose.ClientHub.Exceptions;
 using WinterRose.ClientHub.Feature.InformationRelay.Services;
 using WinterRose.ClientHub.Shared;
 using WinterRose.WebServer.Features.FileUploads.Models;
@@ -493,19 +495,30 @@ public class ApplicationStoreWindow : WindowBase
             selectedApp = null;
             selectedAppVersion = null;
 
-
             HideSidebar();
             PopulateApplicationList();
         }
-        catch (Exception ex)
+        catch (ServerUnavailableException)
         {
             apps.Clear();
 
+            HideSidebar();
             PopulateApplicationList();
 
-            Console.WriteLine(ex);
+            DialogResult r = MessageBox.Show(
+                this,
+                "The server may be offline or your internet connection may be unavailable.\n\nDo you want to quit the app?",
+                "WinterHub couldn't reach the server.",
+                MessageBoxButtons.YesNo, MessageBoxType.Warning , MessageBoxDefaultButton.Yes);
+
+            if (r == DialogResult.Yes)
+                services.Resolve<IApplication>().Stop();
         }
-    }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, MessageBoxType.Error);
+        }
+    } 
     
    
 
