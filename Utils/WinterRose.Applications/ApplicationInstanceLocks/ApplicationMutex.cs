@@ -1,18 +1,20 @@
+using System;
 using System.IO;
 using WinterRose.DependancyInjection;
+using WinterRose.DependancyInjection.Logging;
+using WinterRose.Uris;
 
 namespace WinterRose.Applications.ApplicationInstanceLocks;
 
-[LinuxOnly]
-internal sealed class LinuxApplicationMutex : IApplicationMutex
+internal sealed class ApplicationMutex : IApplicationMutex
 {
     private readonly FileStream? lockFile;
     public bool IsFirstInstance { get; }
 
-    public LinuxApplicationMutex(MutexOptions options)
+    public ApplicationMutex(MutexOptions options)
     {
-        string path = $"/tmp/{options.AppId}.lock";
-
+        string path = Path.Combine(Path.GetTempPath(), $"{options.AppId}.lock");
+        
         try
         {
             lockFile = new FileStream(

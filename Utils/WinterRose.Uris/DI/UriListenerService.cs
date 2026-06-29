@@ -39,6 +39,17 @@ public static class Extensions
             services.AddSingleton<UriListener>();
 
         }
+
+        public void AddUriForwardersOnly(string appId)
+        {
+            services.AddSingleton<UriOptions>().Configure<UriOptions>(options =>
+            {
+                options.AppId = appId;
+            });
+            
+            services.AddSingleton<IUriForwarder, LinuxUriForwarder>();
+            services.AddSingleton<IUriForwarder, WindowsUriForwarder>();
+        }
     }
 
     extension(IApplication app)

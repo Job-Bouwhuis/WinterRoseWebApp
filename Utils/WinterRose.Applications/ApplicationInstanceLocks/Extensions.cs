@@ -9,8 +9,7 @@ public static class Extensions
         public IServiceBuilder AddApplicationMutex(string appId)
         {
             services.AddSingleton<MutexOptions>().Configure<MutexOptions>(x => x.AppId = appId);
-            services.AddSingleton<IApplicationMutex, LinuxApplicationMutex>();
-            services.AddSingleton<IApplicationMutex, WindowsApplicationMutex>();
+            services.AddSingleton<IApplicationMutex, ApplicationMutex>();
             return services;
         }
     }

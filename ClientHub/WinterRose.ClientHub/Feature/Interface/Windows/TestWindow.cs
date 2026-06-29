@@ -3,7 +3,6 @@ using Gdk;
 using Gtk;
 using WinterRose.Applications;
 using WinterRose.DependancyInjection;
-using WinterRose.ForgeThread;
 using Label = Gtk.Label;
 using Orientation = Gtk.Orientation;
 using Window = Gtk.Window;

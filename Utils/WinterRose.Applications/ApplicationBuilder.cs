@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using WinterRose.DependancyInjection;
-using WinterRose.ForgeThread;
 using IServiceProvider = System.IServiceProvider;
 
 namespace WinterRose.Applications;
@@ -47,8 +46,6 @@ public class ApplicationBuilder
         }, ServiceLifetime.Transient);
 
         serviceBuilder.AddFactory<IApplication>(services => app!, ServiceLifetime.Transient);
-        
-        serviceBuilder.AddSingleton<ThreadLoom>();
         
         DependancyInjection.IServiceProvider services = serviceBuilder.Build();
         

@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Threading.Tasks;
 using Eto.Forms;
 using WinterRose.Applications;
-using WinterRose.ForgeThread;
 using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
 using Window = Gtk.Window;
 namespace WinterRose.ClientHub.Feature.Interface.Windows;

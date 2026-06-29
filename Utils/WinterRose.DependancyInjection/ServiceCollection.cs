@@ -3,7 +3,7 @@ using WinterRose.Uris;
 
 namespace WinterRose.DependancyInjection;
 
-public class ServiceCollection : IServiceProvider
+public class ServiceCollection : IServiceProvider, IDisposable
 {
     private readonly Dictionary<Type, List<ServiceDescriptor>> descriptors;
     private readonly List<ServiceFactoryDescriptor> factoryDescriptors;
@@ -616,6 +616,17 @@ public class ServiceCollection : IServiceProvider
         sb.AppendLine($"  -> failed at {failedType.Name}");
 
         return sb.ToString();
+    }
+
+    private bool disposed;
+    public void Dispose()
+    {
+        if (disposed)
+            return;
+        disposed = true;
+        foreach (var singleton in singletons.Values)
+            if (singleton is IDisposable disposable)
+                disposable.Dispose();
     }
 }
 

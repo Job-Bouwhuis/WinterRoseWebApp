@@ -1,5 +1,6 @@
 using Gtk;
 using EtoApplication = Eto.Forms.Application;
+using Eto.GtkSharp;
 
 namespace WinterRose.ClientHub.Feature.Interface;
 
@@ -15,8 +16,9 @@ public class EtoShell
     {
         if (etoApp is not null)
             return;
-        
-        etoApp = new EtoApplication();
+
+        Platform p = new Platform();
+        etoApp = new EtoApplication(p);
     }
 
     public void Shutdown()

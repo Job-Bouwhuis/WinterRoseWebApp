@@ -10,8 +10,6 @@ using WinterRose.ClientHub.Feature.Interface;
 using WinterRose.ClientHub.Feature.Interface.Windows;
 using WinterRose.DependancyInjection.Logging;
 
-using EtoApplication = Eto.Forms.Application;
-
 namespace WinterRose.ClientHub;
 
 internal class App : Application

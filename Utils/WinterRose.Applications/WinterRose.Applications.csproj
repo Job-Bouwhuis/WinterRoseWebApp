@@ -6,7 +6,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\WinterRose-Development\WinterForge.ForgeThread\WinterRose.ForgeThread\WinterRose.ForgeThread.csproj" />
       <ProjectReference Include="..\WinterRose.Applications.Abstractions\WinterRose.Applications.Abstractions.csproj" />
       <ProjectReference Include="..\WinterRose.DependancyInjection\WinterRose.DependancyInjection.csproj" />
     </ItemGroup>

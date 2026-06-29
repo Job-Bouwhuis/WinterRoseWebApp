@@ -9,7 +9,6 @@ using Eto.Forms;
 using WinterRose.Applications;
 using WinterRose.ClientHub.Feature.InformationRelay.Services;
 using WinterRose.ClientHub.Shared;
-using WinterRose.ForgeThread;
 using WinterRose.WebServer.Features.FileUploads.Models;
 using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
 

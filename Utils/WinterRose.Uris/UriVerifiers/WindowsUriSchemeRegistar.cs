@@ -1,4 +1,6 @@
 using Microsoft.Win32;
+using System.Diagnostics;
+using System.Text;
 using WinterRose.DependancyInjection;
 
 namespace WinterRose.Uris.UriVerifiers;
@@ -11,7 +13,7 @@ public class WindowsUriSchemeRegistar : IUriSchemeRegistar
         try
         {
             using RegistryKey key =
-                Registry.ClassesRoot.OpenSubKey($"{options.Scheme}");
+                Registry.LocalMachine.OpenSubKey($@"Software\Classes\{options.Scheme}");
 
             if (key == null)
                 return false;
@@ -28,30 +30,43 @@ public class WindowsUriSchemeRegistar : IUriSchemeRegistar
     public async Task RegisterAsync(UriOptions options, CancellationToken ct = default)
     {
         string executablePath = Environment.ProcessPath
-                                ?? throw new InvalidOperationException(
-                                    "Unable to determine executable path."
-                                );
+            ?? throw new InvalidOperationException("Unable to determine executable path.");
 
-        await Task.Run(() =>
+        string script = BuildPowerShellScript(options, executablePath);
+
+        string tempScriptPath = Path.Combine(Path.GetTempPath(), $"{options.Scheme}_register.ps1");
+        await File.WriteAllTextAsync(tempScriptPath, script, ct);
+
+        ProcessStartInfo psi = new ProcessStartInfo
         {
-            using RegistryKey schemeKey =
-                Registry.ClassesRoot.CreateSubKey(options.Scheme);
+            FileName = "powershell",
+            Arguments = $"-ExecutionPolicy Bypass -File \"{tempScriptPath}\"",
+            UseShellExecute = true,
+            Verb = "runas"
+        };
 
-            schemeKey.SetValue("", $"URL:{options.DisplayName}");
-            schemeKey.SetValue("URL Protocol", "");
+        Process process = Process.Start(psi);
 
-            using RegistryKey defaultIconKey =
-                schemeKey.CreateSubKey("DefaultIcon");
+        if (process == null)
+            throw new InvalidOperationException("Failed to start elevated PowerShell process.");
+    }
 
-            defaultIconKey.SetValue("", executablePath);
+    private string BuildPowerShellScript(UriOptions options, string executablePath)
+    {
+        StringBuilder builder = new StringBuilder();
 
-            using RegistryKey commandKey =
-                schemeKey.CreateSubKey(@"shell\open\command");
+        string keyPath = $@"HKLM:\Software\Classes\{options.Scheme}";
 
-            commandKey.SetValue(
-                "",
-                $"\"{executablePath}\" \"%1\""
-            );
-        }, ct);
+        builder.AppendLine($"New-Item -Path '{keyPath}' -Force | Out-Null");
+        builder.AppendLine($"Set-ItemProperty -Path '{keyPath}' -Name '(default)' -Value 'URL:{options.DisplayName}'");
+        builder.AppendLine($"New-ItemProperty -Path '{keyPath}' -Name 'URL Protocol' -Value '' -Force | Out-Null");
+
+        builder.AppendLine($"New-Item -Path '{keyPath}\\DefaultIcon' -Force | Out-Null");
+        builder.AppendLine($"Set-ItemProperty -Path '{keyPath}\\DefaultIcon' -Name '(default)' -Value '{executablePath}'");
+
+        builder.AppendLine($"New-Item -Path '{keyPath}\\shell\\open\\command' -Force | Out-Null");
+        builder.AppendLine($"Set-ItemProperty -Path '{keyPath}\\shell\\open\\command' -Name '(default)' -Value '\"{executablePath}\" \"%1\"'");
+
+        return builder.ToString();
     }
 }
