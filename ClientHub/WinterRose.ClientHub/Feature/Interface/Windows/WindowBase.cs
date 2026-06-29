@@ -1,23 +1,40 @@
 
 using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
-using Gdk;
+using Eto.Forms;
 using WinterRose.Applications;
 using WinterRose.ForgeThread;
 using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
 using Window = Gtk.Window;
 namespace WinterRose.ClientHub.Feature.Interface.Windows;
 
-public abstract class WindowBase : Window
+public abstract class WindowBase : Form
 {
-    private readonly IServiceProvider services;
-    private bool windowBuilt;
+    protected readonly MainThread main;
+    protected readonly IServiceProvider services;
 
     private IApplication? app;
     
-    public WindowBase(string title, IServiceProvider services) : base(title)
+    public WindowBase(string title, MainThread main, IServiceProvider services)
     {
+        Title = title;
+        this.main = main;
         this.services = services;
+    }
+
+    internal void InitializeWindow()
+    {
+        EnsureApp();
+        Initialize();
+        Content = BuildContent();
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        e.Cancel = true;
+        main.Invoke(() => Visible = false);
+        base.OnClosing(e);
     }
 
     private void EnsureApp()
@@ -27,39 +44,6 @@ public abstract class WindowBase : Window
         app = services.Resolve<IApplication>();
     }
     
-    protected abstract void BuildWindow();
-    
-    private void EnsureWindow()
-    {
-        if (windowBuilt)
-            return;
+    protected abstract Control BuildContent();
 
-        BuildWindow();
-        windowBuilt = true;
-    }
-
-    protected override void OnShown()
-    {
-        Invoke(EnsureWindow);
-        Invoke(base.OnShown);
-    }
-
-    protected override bool OnDeleteEvent(Event evnt)
-    {
-        Invoke(Hide);
-
-        return true;
-    }
-
-    public void Invoke(Action<WindowBase> action)
-    {
-        EnsureApp();
-        app.Invoke(() => action(this));
-    }
-
-    protected void Invoke(Action action)
-    {
-        EnsureApp();
-        app.Invoke(action);
-    }
 }

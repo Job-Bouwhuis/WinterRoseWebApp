@@ -4,7 +4,7 @@ using WinterRose.Uris;
 
 namespace WinterRose.ClientHub.Feature.Uri;
 
-public class Handler(ILogger<Handler> logger) : IUriHandler
+public class URiLoggerHandler(ILogger<URiLoggerHandler> logger) : IUriHandler
 {
     
     public string Command { get; set; }

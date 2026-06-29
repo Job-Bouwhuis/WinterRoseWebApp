@@ -1,32 +1,37 @@
 using Gtk;
-using WinterRose.ClientHub.Feature.Interface.Windows;
+using EtoApplication = Eto.Forms.Application;
 
 namespace WinterRose.ClientHub.Feature.Interface;
 
-public class GtkShell
+public class EtoShell
 {
-    private bool initialized;
-
-    public GtkShell()
+    private EtoApplication etoApp;
+    public EtoShell()
     {
         Start();
     }
     
     public void Start()
     {
-        if (initialized)
+        if (etoApp is not null)
             return;
-
-        Application.Init();
-        initialized = true;
+        
+        etoApp = new EtoApplication();
     }
 
     public void Shutdown()
     {
-        if (!initialized)
+        if (etoApp is null)
             return;
 
-        Application.Quit();
-        initialized = false;
+        etoApp.Quit();
+    }
+
+    public void Tick()
+    {
+        if (etoApp is null)
+            return;
+        
+        etoApp.RunIteration();
     }
 }

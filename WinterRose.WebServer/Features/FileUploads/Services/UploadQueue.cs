@@ -6,7 +6,7 @@ namespace WinterRose.WebServer.Features.FileUploads.Services;
 public record UploadCompletedEvent(
     string Name,
     string BasePath,
-    VersionEntry Version
+    AppVersion AppVersion
 );
 
 public sealed class UploadQueue

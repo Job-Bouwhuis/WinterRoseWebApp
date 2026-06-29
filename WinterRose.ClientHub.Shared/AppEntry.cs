@@ -6,6 +6,6 @@
 public class AppEntry
 {
     public string Name { get; init; } = "";
-    public List<VersionEntry> Versions { get; init; } = [];
+    public List<AppVersion> Versions { get; init; } = [];
     public List<DiffEntry> Diffs { get; init; } = [];
 }

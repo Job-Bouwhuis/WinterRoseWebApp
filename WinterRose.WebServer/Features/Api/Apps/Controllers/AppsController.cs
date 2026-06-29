@@ -3,6 +3,7 @@ using WinterRose.Web.Utils;
 using WinterRose.Web.Validation;
 using WinterRose.WebServer.Features.Api.Apps.Services;
 using WinterRose.WebServer.Features.FileUploads.Models;
+using WinterRose.WebServer.Features.FileUploads.Services;
 
 namespace WinterRose.WebServer.Features.Api.Apps.Controllers;
 
@@ -12,10 +13,12 @@ namespace WinterRose.WebServer.Features.Api.Apps.Controllers;
 public class AppsController : ControllerBase
 {
     private readonly AppRepository repo;
+    private readonly AppDiffService diffService;
 
-    public AppsController(AppRepository repo)
+    public AppsController(AppRepository repo, AppDiffService diffService)
     {
         this.repo = repo;
+        this.diffService = diffService;
     }
 
     [HttpGet]
@@ -30,32 +33,54 @@ public class AppsController : ControllerBase
         string appName,
         [FromQuery] GetVersionsRequest request)
     {
-        var versions = GetVersionsAsync(appName, request.FromVersion, request.limit);
+        var versions = repo.GetVersions(appName, request.FromVersion, request.limit);
         return Ok(new
         {
             app = appName,
             versions
         });
     }
-
-    public List<string> GetVersionsAsync(string appName, string? from, int? limit)
+    
+    [HttpGet("{appName}/versions/{version}/file")]
+    public IActionResult GetVersionFile(
+        string appName,
+        string version,
+        [FromQuery] string path)
     {
-        var allVersions = repo.GetAppEntry(appName).Versions;
+        var versionEntry = new AppVersion(version);
 
-        if (from != null)
-        {
-            VersionEntry vers = new(from);
+        var stream = repo.OpenVersionFile(
+            appName,
+            versionEntry,
+            path);
 
-            allVersions = allVersions.Where(v => v > vers).ToList();
-        }
+        return File(stream, "application/octet-stream", enableRangeProcessing: true);
+    }
+    
+    [HttpGet("{appName}/versions/{version}/archive")]
+    public IActionResult GetVersionArchive(
+        string appName,
+        string version)
+    {
+        var versionEntry = new AppVersion(version);
 
-        if(limit is null)
-            return allVersions.Select(v => v.ToString()).ToList();
+        var stream = repo.OpenVersionArchive(appName, versionEntry);
 
-        return allVersions
-            .Take(limit.Value)
-            .Select(v => v.ToString())
-            .ToList();
+        return File(stream, "application/zip", $"{appName}_{version}.zip", enableRangeProcessing: true);
+    }
+    
+    [HttpGet("{appName}/diff")]
+    public async Task<IActionResult> GetDiff(
+        string appName,
+        [FromQuery] string from,
+        [FromQuery] string to)
+    {
+        var fromVersion = new AppVersion(from);
+        var toVersion = new AppVersion(to);
+
+        var stream = await diffService.OpenDiffStreamAsync(appName, fromVersion, toVersion);
+
+        return File(stream, "application/octet-stream", enableRangeProcessing: true);
     }
 
     public class GetVersionsRequest : IValidationDefinition<GetVersionsRequest>

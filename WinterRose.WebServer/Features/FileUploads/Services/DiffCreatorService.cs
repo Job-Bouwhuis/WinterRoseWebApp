@@ -4,9 +4,11 @@ using WinterRose.WebServer.Features.FileUploads.Models;
 
 namespace WinterRose.WebServer.Features.FileUploads.Services;
 
-public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorService> logger)
+public sealed class DiffCreatorService(AppDiffService diffService, UploadQueue queue, ILogger<DiffCreatorService> logger)
     : BackgroundService
 {
+    private static string UploadsFolderPath = "Uploads";
+    
     private DirectoryDiffEngine directoryDiffer = new();
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -50,11 +52,11 @@ public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorSer
             return;
         }
 
-        string targetTag = string.IsNullOrEmpty(ev.Version.Tag)
+        string targetTag = string.IsNullOrEmpty(ev.AppVersion.Tag)
             ? "release"
-            : ev.Version.Tag.ToLowerInvariant();
+            : ev.AppVersion.Tag.ToLowerInvariant();
 
-        var versionEntries = baseDir
+        var versionDirs = baseDir
             .GetDirectories()
             .Where(d =>
                 !d.Name.Equals("latest", StringComparison.OrdinalIgnoreCase) &&
@@ -67,106 +69,44 @@ public sealed class DiffCreatorService(UploadQueue queue, ILogger<DiffCreatorSer
             .Where(x => x.Version is not null)
             .ToList();
 
-        var sameTagVersions = versionEntries
+        var sameTag = versionDirs
             .Where(x =>
                 string.IsNullOrEmpty(x.Version!.Tag)
                     ? targetTag == "release"
-                    : x.Version!.Tag.Equals(ev.Version.Tag, StringComparison.OrdinalIgnoreCase))
+                    : x.Version!.Tag.Equals(ev.AppVersion.Tag, StringComparison.OrdinalIgnoreCase))
             .OrderBy(x => x.Version)
             .ToList();
 
-        if (sameTagVersions.Count == 0)
+        if (sameTag.Count < 2)
         {
-            logger.LogWarning("No versions found for tag {Tag}", targetTag);
+            logger.LogWarning("Not enough versions to create diff for {Tag}", targetTag);
             return;
         }
 
-        var latest = sameTagVersions[^1].Directory;
+        var to = sameTag[^1].Directory;
+        var from = sameTag[^2].Directory;
 
-        var previous = sameTagVersions.Count > 1
-            ? sameTagVersions[^2].Directory
-            : null;
+        logger.LogInformation("Preparing diff: {From} -> {To}", from.Name, to.Name);
 
-        logger.LogInformation("Latest version: {Latest}", latest.FullName);
+        await diffService.GetOrCreateDiffAsync(
+            ev.Name,
+            from,
+            to);
 
-        if (previous is null)
-            return;
-
-        logger.LogInformation("Previous version: {Previous}", previous.FullName);
-        logger.LogInformation("Creating diff between {Previous} and {Latest}", previous.FullName, latest.FullName);
-
-        var diff = await directoryDiffer.DiffAsync(previous, latest);
-
-        var diffDir = baseDir.CreateSubdirectory("Diffs");
-
-        string diffName = $"{previous.Name}_TO_{latest.Name}";
-
-        diff.Save(Path.Combine(diffDir.FullName, diffName));
-
-        logger.LogInformation("Diff created: {Diff}", diffName);
-
-        var loaded = DirectoryDiff.Load(Path.Combine(diffDir.FullName, diffName));
-
-        TestDiffApply(previous, latest, loaded);
+        logger.LogInformation("Diff ready for {App}", ev.Name);
     }
-
-    private void TestDiffApply(DirectoryInfo previous, DirectoryInfo latest, DirectoryDiff diff)
-    {
-        string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-        string testDirectory = Path.Combine(desktop, previous.Name);
-
-        if (Directory.Exists(testDirectory))
-            Directory.Delete(testDirectory, true);
-
-        CopyDirectory(previous.FullName, testDirectory);
-
-        var applyer = new DiffApplyer();
-
-        logger.LogInformation("Applying diff to test directory: {0}", testDirectory);
-        var t = applyer.ApplyDiff(testDirectory, diff).GetAwaiter().GetResult();
-
-        if (t.Count is 0)
-            logger.LogInformation("Diff applied successfully!");
-        else
-        {
-            foreach(string path in t)
-            {
-                logger.LogWarning("Diff failed for file {}", path);
-            }
-        }
-
-
-    }
-
-    private VersionEntry? ParseVersionEntry(string folderName)
+    
+    
+    
+    private AppVersion? ParseVersionEntry(string folderName)
     {
         try
         {
-            return new VersionEntry(folderName);
+            return new AppVersion(folderName);
         }
         catch
         {
             return null;
-        }
-    }
-
-    private void CopyDirectory(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-
-        foreach (string directory in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
-        {
-            string relative = Path.GetRelativePath(source, directory);
-            Directory.CreateDirectory(Path.Combine(destination, relative));
-        }
-
-        foreach (string file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-        {
-            string relative = Path.GetRelativePath(source, file);
-            string target = Path.Combine(destination, relative);
-
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.Copy(file, target, true);
         }
     }
 }

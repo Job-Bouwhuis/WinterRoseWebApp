@@ -65,6 +65,8 @@ internal class Program
 
         builder.Services.AddHostedService<DiffCreatorService>();
 
+        builder.Services.AddSingleton<AppDiffService>();
+        
 
         builder.Services.Configure<FormOptions>(options =>
         {

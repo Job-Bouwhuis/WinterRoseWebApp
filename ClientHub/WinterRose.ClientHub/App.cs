@@ -10,37 +10,32 @@ using WinterRose.ClientHub.Feature.Interface;
 using WinterRose.ClientHub.Feature.Interface.Windows;
 using WinterRose.DependancyInjection.Logging;
 
+using EtoApplication = Eto.Forms.Application;
+
 namespace WinterRose.ClientHub;
 
 internal class App : Application
 {
     public static ApplicationBuilder CreateBuilder()
     {
+        // the builder from WinterRose.Applications
         ApplicationBuilder builder = new ApplicationBuilder();
         builder.UseApplication<App>();
         return builder;
     }
 
-    private int delay = 1000;
-
     private readonly UiManager uiManager;
-    private Task ServiceTask;
+    private readonly MainThread mainThread;
 
-    public App(UiManager uiManager, ILogger<App> logger)
+    public App(UiManager uiManager, MainThread mainThread, ILogger<App> logger)
     {
         this.uiManager = uiManager;
-    }
-
-    public void Start()
-    {
-    }
-
-    public void Stop()
-    {
+        this.mainThread = mainThread;
     }
 
     protected override void Tick(CancellationToken token)
     {
-        Gtk.Application.RunIteration();
+        uiManager.ProcessUIStuff();
+        mainThread.ProcessActions();
     }
 }

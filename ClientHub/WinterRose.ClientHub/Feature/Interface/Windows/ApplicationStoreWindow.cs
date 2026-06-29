@@ -1,12 +1,14 @@
-
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Gdk;
-using Gtk;
+using Eto.Drawing;
+using Eto.Forms;
 using WinterRose.Applications;
 using WinterRose.ClientHub.Feature.InformationRelay.Services;
+using WinterRose.ClientHub.Shared;
 using WinterRose.ForgeThread;
 using WinterRose.WebServer.Features.FileUploads.Models;
 using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
@@ -16,34 +18,52 @@ namespace WinterRose.ClientHub.Feature.Interface.Windows;
 public class ApplicationStoreWindow : WindowBase
 {
     private readonly AppServerClient server;
-    private ListBox appList = null!;
-    private ListBox versionList = null!;
-    private ComboBoxText branchSelector = null!;
-    private SearchEntry filterEntry = null!;
-    private Revealer sidebar = null!;
 
-    private List<AppEntry> apps = new();
+    private TextBox filterEntry;
+    private ListBox appList;
+    private ListBox versionList;
+    private ComboBox branchSelector;
+    private Button installButton;
+    private Button closeButton;
+    private Label appTitle;
+    private Panel sidebarContainer;
     
-    private AppEntry? selectedApp;
-    private VersionEntry? selectedVersion;
+    private List<LocalAppEntry> installedApps = new();
+
+    // State
+    private List<AppEntry> apps = new List<AppEntry>();
+    private AppEntry selectedApp;
+    private AppVersion selectedAppVersion;
+    private bool sidebarVisible = false;
 
     private Task? dataRefreshTask;
-    
-    public ApplicationStoreWindow(AppServerClient server, IServiceProvider services) : base("WinterHub", services)
+    private readonly ClientAppRepository clientRepo;
+    private readonly ApplicationInstaller installer;
+
+    public ApplicationStoreWindow(
+        AppServerClient server,
+        ClientAppRepository clientRepo,
+        ApplicationInstaller installer,
+        MainThread main,
+        IServiceProvider services)
+        : base("WinterHub", main, services)
     {
         this.server = server;
-    }
-    
-    protected override void OnShown()
-    {
-        base.OnShown();
-        Invoke(() =>
+        this.clientRepo = clientRepo;
+        this.installer = installer;
+
+        main.Invoke(() =>
         {
-            DefaultWidth = 900;
-            DefaultHeight = 550;
-            WindowPosition = WindowPosition.Center;
+            Width = 750;
+            Height = 750;
         });
+    }
+
+    protected override void OnShown(EventArgs args)
+    {
+        base.OnShown(args);
         dataRefreshTask ??= RefreshAsync();
+        installedApps = clientRepo.GetInstalledApps();
     }
 
     private async Task RefreshAsync()
@@ -52,312 +72,455 @@ public class ApplicationStoreWindow : WindowBase
         dataRefreshTask = null;
     }
 
-    protected override bool OnDeleteEvent(Event evnt)
+    protected override void OnClosing(CancelEventArgs e)
     {
-        Hide();
-        return true;
+        e.Cancel = true;
+        Visible = false;
+        base.OnClosing(e);
     }
 
-    protected override void BuildWindow()
+    protected override Control BuildContent()
     {
-        Box root = new Box(Orientation.Horizontal, 8);
-        root.BorderWidth = 10;
-
-        Add(root);
+        // ==========================================================
+        // Main Layout
+        // ==========================================================
+        var root = new TableLayout
+        {
+            Padding = new Padding(10),
+            Spacing = new Size(0, 8)
+        };
 
         // ==========================================================
-        // Left Panel
+        // Toolbar
         // ==========================================================
-
-        Box leftPanel = new Box(Orientation.Vertical, 6);
-
-        filterEntry = new SearchEntry
+        filterEntry = new TextBox
         {
             PlaceholderText = "Search applications..."
         };
 
-        leftPanel.PackStart(filterEntry, false, false, 0);
+        var secretIdButton = new Button
+        {
+            Text = "By Secret ID..."
+        };
 
-        ScrolledWindow appScroll = new ScrolledWindow();
-        appScroll.ShadowType = ShadowType.In;
+        var toolbar = new TableLayout
+        {
+            Spacing = new Size(6, 0)
+        };
+
+        toolbar.Rows.Add(new TableRow(
+            new TableCell(filterEntry) { ScaleWidth = true },
+            secretIdButton
+        ));
+
+        // ==========================================================
+        // Left Panel
+        // ==========================================================
+        var leftPanel = new TableLayout
+        {
+            Spacing = new Size(0, 6)
+        };
+
+        var appScroll = new Scrollable
+        {
+            Border = BorderType.Line
+        };
 
         appList = new ListBox();
-        appList.SelectionMode = SelectionMode.Single;
+        appList.SelectedIndexChanged += OnAppSelected;
 
-        appScroll.Add(appList);
+        appScroll.Content = appList;
 
-        leftPanel.PackStart(appScroll, true, true, 0);
-
-        root.PackStart(leftPanel, true, true, 0);
+        leftPanel.Rows.Add(new TableRow(appScroll) { ScaleHeight = true });
 
         // ==========================================================
         // Sidebar
         // ==========================================================
-
-        sidebar = new Revealer
+        sidebarContainer = new Panel
         {
-            RevealChild = false,
-            TransitionType = RevealerTransitionType.SlideLeft,
-            TransitionDuration = 250
+            Visible = false,
+            Width = 300
         };
 
-        Box sidebarBox = new Box(Orientation.Vertical, 8)
+        var sidebarLayout = new TableLayout
         {
-            BorderWidth = 8,
-            WidthRequest = 300
+            Padding = new Padding(8),
+            Spacing = new Size(0, 8)
         };
 
-        sidebar.Add(sidebarBox);
-
-        // App title
-
-        Label appTitle = new Label()
+        appTitle = new Label
         {
-            Xalign = 0
+            Text = "",
+            TextAlignment = TextAlignment.Left
         };
 
-        sidebarBox.PackStart(appTitle, false, false, 0);
+        sidebarLayout.Rows.Add(new TableRow(appTitle));
 
-        // Branch selector
-
-        sidebarBox.PackStart(
-            new Label("Branch")
+        sidebarLayout.Rows.Add(new TableRow(
+            new Label
             {
-                Xalign = 0
-            },
-            false,
-            false,
-            0);
+                Text = "Branch",
+                TextAlignment = TextAlignment.Left
+            }));
 
-        branchSelector = new ComboBoxText();
+        branchSelector = new ComboBox();
+        branchSelector.SelectedIndexChanged += OnBranchChanged;
 
-        sidebarBox.PackStart(branchSelector, false, false, 0);
+        sidebarLayout.Rows.Add(new TableRow(branchSelector));
 
-        // Versions
-
-        sidebarBox.PackStart(
-            new Label("Versions")
+        sidebarLayout.Rows.Add(new TableRow(
+            new Label
             {
-                Xalign = 0
-            },
-            false,
-            false,
-            0);
+                Text = "Versions",
+                TextAlignment = TextAlignment.Left
+            }));
 
-        ScrolledWindow versionScroll = new ScrolledWindow();
-        versionScroll.ShadowType = ShadowType.In;
+        var versionScroll = new Scrollable
+        {
+            Border = BorderType.Line
+        };
 
         versionList = new ListBox();
-        versionList.SelectionMode = SelectionMode.Single;
+        versionList.SelectedIndexChanged += OnVersionSelected;
 
-        versionScroll.Add(versionList);
+        versionScroll.Content = versionList;
 
-        sidebarBox.PackStart(versionScroll, true, true, 0);
+        sidebarLayout.Rows.Add(new TableRow(versionScroll) { ScaleHeight = true });
 
-        // Bottom buttons
+        installButton = new Button { Text = "Install" };
+        closeButton = new Button { Text = "Close" };
 
-        Box buttonRow = new Box(Orientation.Horizontal, 6);
+        var buttonLayout = new TableLayout
+        {
+            Spacing = new Size(6, 0)
+        };
 
-        Button installButton = new Button("Install");
+        buttonLayout.Rows.Add(new TableRow(
+            new TableCell(installButton) { ScaleWidth = true },
+            closeButton
+        ));
 
-        Button closeButton = new Button("Close");
+        sidebarLayout.Rows.Add(new TableRow(buttonLayout));
 
-        buttonRow.PackStart(installButton, true, true, 0);
-        buttonRow.PackStart(closeButton, false, false, 0);
+        sidebarContainer.Content = sidebarLayout;
 
-        sidebarBox.PackEnd(buttonRow, false, false, 0);
+        // ==========================================================
+        // Content Area
+        // ==========================================================
+        var content = new TableLayout();
 
-        root.PackStart(sidebar, false, false, 0);
+        content.Rows.Add(new TableRow(
+            new TableCell(leftPanel) { ScaleWidth = true },
+            new TableCell(sidebarContainer) { ScaleWidth = false }
+        ));
+
+        // ==========================================================
+        // Assemble
+        // ==========================================================
+        root.Rows.Add(new TableRow(toolbar) { ScaleHeight = false });
+        root.Rows.Add(new TableRow(content) { ScaleHeight = true });
 
         // ==========================================================
         // Events
         // ==========================================================
+        installButton.Click += OnInstallClicked;
+        closeButton.Click += (sender, e) => HideSidebar();
+        secretIdButton.Click += OnSecretIdClicked;
 
-        closeButton.Clicked += (sender, args) => { sidebar.RevealChild = false; };
+        return root;
+    }
 
-        appList.RowSelected += (sender, args) =>
+    private async void OnSecretIdClicked(object? sender, EventArgs e)
+    {
+        var dialog = new Dialog<string>();
+
+        var textBox = new TextBox { PlaceholderText = "xxxxxxxxxxx-abc-00000"};
+
+        dialog.Content = new TableLayout(
+                new Label { Text = "Enter a secret ID"},
+            new TableRow(textBox),
+            new TableRow(
+                new Button
+                {
+                    Text = "Lookup",
+                    Command = new Command((s, e2) => dialog.Close(textBox.Text))
+                })
+        );
+
+        string? secretId = dialog.ShowModal(this);
+
+        if (string.IsNullOrWhiteSpace(secretId))
+            return;
+
+        try
         {
-            if (args.Row == null)
+            AppEntry? app = null; //await server.GetBySecretIdAsync(secretId);
+
+            if (app == null)
+            {
+                MessageBox.Show(this,
+                    "No application was found for that Secret ID.",
+                    MessageBoxType.Warning);
                 return;
+            }
 
-            if (args.Row.Index < 0 || args.Row.Index >= apps.Count)
-                return;
-
-            selectedApp = apps[args.Row.Index];
-
-            appTitle.Text = selectedApp.Name;
+            selectedApp = app;
+            appTitle.Text = app.Name;
 
             PopulateBranches();
+            PopulateVersions();
 
-            sidebar.RevealChild = true;
-        };
-
-        branchSelector.Changed += (sender, args) => { PopulateVersions(); };
-
-        versionList.RowSelected += (sender, args) =>
+            ShowSidebar();
+        }
+        catch (Exception ex)
         {
-            if (args.Row == null)
-                return;
-
-            if (selectedApp == null)
-                return;
-
-            string selectedBranch = branchSelector.ActiveText ?? "";
-
-            List<VersionEntry> versions = selectedApp.Versions
-                .Where(v =>
-                    string.IsNullOrEmpty(selectedBranch)
-                        ? string.IsNullOrEmpty(v.Tag)
-                        : v.Tag == selectedBranch)
-                .ToList();
-
-            if (args.Row.Index < 0 || args.Row.Index >= versions.Count)
-                return;
-
-            selectedVersion = versions[args.Row.Index];
-
-            bool installed = false;
-
-            installButton.Label = installed
-                ? "Update"
-                : "Install";
-        };
-
-        installButton.Clicked += (sender, args) =>
-        {
-            if (selectedVersion == null)
-                return;
-
-            // TODO
-            // Install or update selectedVersion
-        };
-
-        ShowAll();
-
-        // Start hidden until an app is selected.
-        sidebar.RevealChild = false;
+            MessageBox.Show(this,
+                ex.Message,
+                MessageBoxType.Error);
+        }
     }
-    
-    private void PopulateApplicationList()
+
+    private void OnAppSelected(object? sender, EventArgs e)
     {
-        foreach (Widget child in appList.Children)
+        int index = appList.SelectedIndex;
+
+        if (index < 0 || index >= apps.Count)
         {
-            appList.Remove(child);
+            selectedApp = null;
+            HideSidebar();
+            return;
         }
 
-        foreach (AppEntry app in apps)
-        {
-            ListBoxRow row = new ListBoxRow();
+        selectedApp = apps[index];
+        appTitle.Text = selectedApp.Name;
 
-            Label label = new Label(app.Name)
-            {
-                Xalign = 0
-            };
+        PopulateBranches();
+        PopulateVersions();
 
-            row.Add(label);
-
-            appList.Add(row);
-        }
-
-        appList.ShowAll();
+        ShowSidebar();
     }
-    
-    private void PopulateBranches()
+
+    private void OnBranchChanged(object? sender, EventArgs e)
     {
-        branchSelector.RemoveAll();
+        PopulateVersions();
+        installButton.Text = GetInstallAction(selectedAppVersion);
+    }
+
+    private void OnVersionSelected(object? sender, EventArgs e)
+    {
+        selectedAppVersion = null;
 
         if (selectedApp == null)
             return;
 
-        branchSelector.Append("", "Release");
+        string selectedBranch =
+            branchSelector.SelectedIndex <= 0
+                ? ""
+                : branchSelector.SelectedValue?.ToString() ?? "";
+
+        List<AppVersion> versions = selectedApp.Versions
+            .Where(version =>
+                string.IsNullOrEmpty(selectedBranch)
+                    ? string.IsNullOrEmpty(version.Tag)
+                    : version.Tag == selectedBranch)
+            .OrderByDescending(version => version.UploadedAt)
+            .ToList();
+
+        int index = versionList.SelectedIndex;
+
+        if (index == -1)
+        {
+            installButton.Text = "Install";
+            return;
+        }
+        
+        if (index >= 0 && index < versions.Count)
+            selectedAppVersion = versions[index];
+        
+        installButton.Text = GetInstallAction(selectedAppVersion);
+    }
+
+    private void RefreshInstalledApps()
+    {
+        installedApps = clientRepo.GetInstalledApps();
+
+        if (selectedAppVersion != null)
+            installButton.Text = GetInstallAction(selectedAppVersion);
+    }
+    
+    private async void OnInstallClicked(object? sender, EventArgs e)
+    {
+        if (selectedApp == null || selectedAppVersion == null)
+            return;
+
+        try
+        {
+            var progressWindow = new InstallationProgressWindow(main, services);
+            progressWindow.Show();
+
+            var progress = progressWindow.CreateUiScope();
+
+            string action = GetInstallAction(selectedAppVersion);
+
+            if (action is "Update" or "Migrate")
+            {
+                LocalAppEntry installed = GetInstalledApp(selectedApp.Name)!;
+                await installer.PatchApplicationAsync(installed.Name, installed.Version, selectedAppVersion, progress);
+            }
+            else
+            {
+                // "Install" or "Re-Install" — full archive
+                await installer.InstallFromArchiveAsync(selectedApp.Name, selectedAppVersion, progress);
+            }
+
+            RefreshInstalledApps();
+            ShowSidebar();
+            
+            progress.Report(1.0, "Done");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, MessageBoxType.Error);
+        }
+    }
+
+    private void PopulateApplicationList()
+    {
+        appList.Items.Clear();
+
+        foreach (AppEntry app in apps)
+        {
+            appList.Items.Add(app.Name);
+        }
+    }
+
+    private void PopulateBranches()
+    {
+        branchSelector.Items.Clear();
+
+        if (selectedApp == null)
+            return;
+
+        branchSelector.Items.Add("Release");
 
         HashSet<string> branches = new(StringComparer.OrdinalIgnoreCase);
 
-        foreach (VersionEntry version in selectedApp.Versions)
+        foreach (AppVersion version in selectedApp.Versions)
         {
             if (string.IsNullOrWhiteSpace(version.Tag))
                 continue;
 
             if (branches.Add(version.Tag))
-            {
-                branchSelector.Append(version.Tag, version.Tag);
-            }
+                branchSelector.Items.Add(version.Tag);
         }
 
-        branchSelector.ActiveId = "";
+        branchSelector.SelectedIndex = 0;
     }
-    
+
     private void PopulateVersions()
     {
-        foreach (Widget child in versionList.Children)
-        {
-            versionList.Remove(child);
-        }
+        versionList.Items.Clear();
 
-        selectedVersion = null;
+        selectedAppVersion = null;
 
         if (selectedApp == null)
             return;
 
-        string selectedBranch = branchSelector.ActiveId ?? "";
+        string selectedBranch =
+            branchSelector.SelectedIndex <= 0
+                ? ""
+                : branchSelector.SelectedValue?.ToString() ?? "";
 
-        IEnumerable<VersionEntry> versions = selectedApp.Versions
+        var versions = selectedApp.Versions
             .Where(version =>
                 string.IsNullOrEmpty(selectedBranch)
                     ? string.IsNullOrEmpty(version.Tag)
                     : version.Tag == selectedBranch)
-            .OrderByDescending(version => version.UploadedAt);
+            .OrderByDescending(version => version.UploadedAt)
+            .ToList();
 
-        foreach (VersionEntry version in versions)
+        foreach (AppVersion version in versions)
         {
-            ListBoxRow row = new ListBoxRow();
-
-            Box box = new Box(Orientation.Vertical, 2);
-
-            Label versionLabel = new Label(
-                $"{version.Major}.{version.Minor}.{version.Patch}")
-            {
-                Xalign = 0
-            };
-
-            Label uploadLabel = new Label(
-                version.UploadedAt.ToString("D"))
-            {
-                Xalign = 0
-            };
-
-            box.PackStart(versionLabel, false, false, 0);
-            box.PackStart(uploadLabel, false, false, 0);
-
-            row.Add(box);
-
-            versionList.Add(row);
+            versionList.Items.Add(
+                $"{version.Major}.{version.Minor}.{version.Patch}    ({version.UploadedAt:D})");
         }
 
-        versionList.ShowAll();
+        // auto select latest
+        if (versions.Count > 0)
+        {
+            versionList.SelectedIndex = 0;
+            selectedAppVersion = versions[0];
+
+            installButton.Text = GetInstallAction(selectedAppVersion);
+        }
     }
 
+    private string GetInstallAction(AppVersion selected)
+    {
+        if (selectedApp == null)
+            return "Install";
+
+        var installed = GetInstalledApp(selectedApp.Name);
+
+        if (installed == null)
+            return "Install";
+
+        var installedVersion = installed.Version;
+
+        // same branch
+        bool sameBranch = installedVersion.Tag == selected.Tag;
+
+        if (selected > installedVersion)
+            return "Update";
+
+        if (!sameBranch || selected < installedVersion)
+            return "Migrate";
+
+        return "Re-Install";
+    }
+    
+    private LocalAppEntry? GetInstalledApp(string appName)
+    {
+        return installedApps.FirstOrDefault(x =>
+            string.Equals(x.Name, appName, StringComparison.OrdinalIgnoreCase));
+    }
+    
     private async Task LoadDataAsync()
     {
         try
         {
-            var appEntries = await server.GetAppEntriesAsync();
-
-            apps = appEntries;
+            apps = await server.GetAppEntriesAsync();
 
             selectedApp = null;
-            selectedVersion = null;
+            selectedAppVersion = null;
 
-            sidebar.RevealChild = false;
 
-            Invoke(PopulateApplicationList);
+            HideSidebar();
+            PopulateApplicationList();
         }
         catch (Exception ex)
         {
             apps.Clear();
-            Invoke(PopulateApplicationList);
+
+            PopulateApplicationList();
 
             Console.WriteLine(ex);
         }
+    }
+    
+   
+
+    private void HideSidebar()
+    {
+        sidebarVisible = false;
+        sidebarContainer.Visible = false;
+
+        appList.SelectedIndex = -1;
+    }
+
+    private void ShowSidebar()
+    {
+        sidebarVisible = true;
+        sidebarContainer.Visible = true;
     }
 }

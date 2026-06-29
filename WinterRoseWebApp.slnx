@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Apps/">
     <Project Path="ClientHub/WinterRose.ClientHub/WinterRose.ClientHub.csproj" Id="4ce63e2d-8e73-4ede-9c13-b3b777de9b9d" />
+    <Project Path="EttoFormsTests/EttoFormsTests.csproj" />
     <Project Path="WinterRose.ClientHub.Shared/WinterRose.ClientHub.Shared.csproj" Id="76d36d3d-298c-4a50-ba69-436d0de5aa57" />
     <Project Path="WinterRose.WebServer\WinterRose.WebServer.csproj" />
   </Folder>
@@ -20,6 +21,7 @@
     <Project Path="Utils/WinterRose.DependancyInjection.Abstractions/WinterRose.DependancyInjection.Abstractions.csproj" />
     <Project Path="Utils/WinterRose.DependancyInjection/WinterRose.DependancyInjection.csproj" />
     <Project Path="Utils/WinterRose.OSEnvironments/WinterRose.OSEnvironments.csproj" />
+    <Project Path="Utils/WinterRose.ProgressKeeping/WinterRose.ProgressKeeping.csproj" />
     <Project Path="Utils/WinterRose.Uris.Abstractions/WinterRose.Uris.Abstractions.csproj" />
     <Project Path="Utils/WinterRose.Uris/WinterRose.Uris.csproj" />
     <Project Path="WinterRose.Web.Logging/WinterRose.Web.Logging.csproj" Id="4607bd27-6cab-444b-bfd6-ef1670c3a0b2" />

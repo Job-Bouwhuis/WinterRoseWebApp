@@ -16,7 +16,7 @@ public class ShowWindowUriHandler(UiManager ui) : IUriHandler
     {
         if (context.Query.Count == 0)
         {
-            ui.Show<TestWindow>();
+            ui.Show<ApplicationStoreWindow>();
         }
 
         return Task.CompletedTask;

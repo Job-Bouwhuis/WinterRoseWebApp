@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using WinterRose.WebServer.Features.FileUploads.Models;
+using WinterRose.WebServer.Features.FileUploads.Services;
 
 namespace WinterRose.WebServer.Features.Api.Apps.Services;
 
@@ -8,11 +9,15 @@ public partial class AppRepository
     const string UPLOADS_FOLDER_NAME = "Uploads";
     private readonly DirectoryInfo uploadsFolder;
     private string UploadsFolderPath { get; } = Path.Combine(AppContext.BaseDirectory, UPLOADS_FOLDER_NAME);
-
-    public AppRepository()
+    private readonly AppDiffService appDiffService;
+    
+    public AppRepository(AppDiffService appDiffService)
     {
+        this.appDiffService = appDiffService;
+
         if (!Directory.Exists(UploadsFolderPath))
             Directory.CreateDirectory(UploadsFolderPath);
+
         uploadsFolder = new DirectoryInfo(UploadsFolderPath);
     }
 
@@ -56,6 +61,79 @@ public partial class AppRepository
         return new AppSummary(appName, latestVersion);
     }
 
+    public Stream OpenVersionFile(
+        string appName,
+        AppVersion appVersion,
+        string relativeFilePath)
+    {
+        string versionRoot = Path.Combine(
+            UploadsFolderPath,
+            appName,
+            appVersion.ToString(VersionStringFormat.FolderSafe));
+
+        if (!Directory.Exists(versionRoot))
+            throw new DirectoryNotFoundException(
+                $"Version '{appVersion}' of app '{appName}' not found.");
+
+        string fullPath = Path.Combine(versionRoot, relativeFilePath);
+
+        if (!File.Exists(fullPath))
+            throw new FileNotFoundException(
+                $"File '{relativeFilePath}' not found in version '{appVersion}'.");
+
+        return new FileStream(
+            fullPath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read);
+    }
+    
+    public Stream OpenVersionArchive(
+        string appName,
+        AppVersion appVersion)
+    {
+        string versionRoot = Path.Combine(
+            UploadsFolderPath,
+            appName,
+            appVersion.ToString(VersionStringFormat.FolderSafe));
+
+        if (!Directory.Exists(versionRoot))
+            throw new DirectoryNotFoundException(
+                $"Version '{appVersion}' of app '{appName}' not found.");
+
+        MemoryStream output = new MemoryStream();
+
+        using (var archive = new System.IO.Compression.ZipArchive(
+                   output,
+                   System.IO.Compression.ZipArchiveMode.Create,
+                   leaveOpen: true))
+        {
+            foreach (string file in Directory.EnumerateFiles(
+                         versionRoot,
+                         "*",
+                         SearchOption.AllDirectories))
+            {
+                string entryName = Path.GetRelativePath(versionRoot, file);
+
+                var entry = archive.CreateEntry(entryName);
+
+                using var entryStream = entry.Open();
+                using var fileStream = new FileStream(
+                    file,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read);
+
+                fileStream.CopyTo(entryStream);
+            }
+        }
+
+        output.Position = 0;
+        return output;
+    }
+    
+    
+    
     public async Task<List<AppEntry>> GetAppEntries()
     {
         var nameDirs = Directory.EnumerateDirectories(UploadsFolderPath)
@@ -86,7 +164,7 @@ public partial class AppRepository
 
     private string GetLatestVersionFromAppPath(string appPath)
     {
-        VersionEntry? latest = null;
+        AppVersion? latest = null;
 
         foreach (var subDir in Directory.EnumerateDirectories(appPath))
         {
@@ -98,11 +176,11 @@ public partial class AppRepository
             if (folderName.Equals("diffs", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            VersionEntry current;
+            AppVersion current;
 
             try
             {
-                current = new VersionEntry(folderName);
+                current = new AppVersion(folderName);
             }
             catch
             {
@@ -120,7 +198,7 @@ public partial class AppRepository
     {
         var uploadName = Path.GetFileName(appPath);
 
-        var versions = new List<VersionEntry>();
+        var versions = new List<AppVersion>();
         var diffs = new List<DiffEntry>();
 
         foreach (var subDir in Directory.EnumerateDirectories(appPath))
@@ -153,18 +231,18 @@ public partial class AppRepository
                 continue;
             }
 
-            VersionEntry version;
+            AppVersion appVersion;
 
             try
             {
-                version = new VersionEntry(folderName);
+                appVersion = new AppVersion(folderName);
             }
             catch
             {
                 continue;
             }
 
-            versions.Add(version);
+            versions.Add(appVersion);
         }
 
         versions.Sort((a, b) => a.CompareTo(b));
@@ -175,5 +253,24 @@ public partial class AppRepository
             Versions = versions,
             Diffs = diffs,
         };
+    }
+
+    public List<string> GetVersions(string appName, string? from, int? limit)
+    {
+        var allVersions = GetAppEntry(appName).Versions;
+
+        if (from != null)
+        {
+            AppVersion vers = new(from);
+            allVersions = allVersions.Where(v => v > vers).ToList();
+        }
+
+        if(limit is null)
+            return allVersions.Select(v => v.ToString()).ToList();
+
+        return allVersions
+            .Take(limit.Value)
+            .Select(v => v.ToString())
+            .ToList();
     }
 }

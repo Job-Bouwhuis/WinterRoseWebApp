@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using WinterRose.Applications;
 using WinterRose.Applications.ApplicationInstanceLocks;
@@ -25,6 +26,7 @@ internal class Program
 
     private static void Main(string[] args)
     {
+        // this is for testing purposes.
         args = ["winterrose://show-window"];
         
         Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
@@ -32,6 +34,7 @@ internal class Program
         
         ApplicationBuilder builder = App.CreateBuilder();
         
+        // The Http client to talk to the remote server
         builder.Services.AddHttpClient()
             .Configure<HttpClient>(client =>
             {
@@ -42,17 +45,25 @@ internal class Program
                 );
             });
         
-        builder.Services.AddSingleton<App>();
         builder.Services.AddSingleton<WindowBase, ApplicationStoreWindow>();
         builder.Services.AddSingleton<WindowBase, TestWindow>();
+        
         builder.Services.AddSingleton<AppServerClient>();
-        builder.Services.AddSingleton<GtkShell>();
+        builder.Services.AddSingleton<EtoShell>();
         builder.Services.AddSingleton<UiManager>();
         builder.Services.AddApplicationMutex("winterrose.hub");
-        builder.Services.AddSingleton<IUriHandler, Handler>();
+        builder.Services.AddSingleton<IUriHandler, URiLoggerHandler>();
         builder.Services.AddSingleton<IUriHandler, ShowWindowUriHandler>();
+        builder.Services.AddSingleton<MainThread>();
+
+        builder.Services.AddSingleton<ApplicationInstaller>();
+        builder.Services.AddSingleton<ClientAppRepository>();
+        
+        // adds linux and windows variants of the Uri services which the DI container resolves for whatever OS the
+        // app runs on
         builder.Services.AddUriListener("winterrose.hub", "winterrose", "WinterRose Hub");
         
+        // Building the app adds loggers automatically
         App app = builder.Build<App>();
 
         if (ValidateAppMutex(app, args)) 

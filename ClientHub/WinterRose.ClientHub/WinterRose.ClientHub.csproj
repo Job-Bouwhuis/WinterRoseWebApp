@@ -10,18 +10,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GtkSharp" Version="3.24.24.95" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\..\..\WinterRose-Development\WinterRose.Diff\WinterRose.Diff.csproj" />
     <ProjectReference Include="..\..\..\WinterRose.WinterForge\src\WinterRose.WinterForge\WinterRose.WinterForge.csproj" />
     <ProjectReference Include="..\..\Utils\WinterRose.Applications\WinterRose.Applications.csproj" />
     <ProjectReference Include="..\..\Utils\WinterRose.Configuration\WinterRose.Configuration.csproj" />
     <ProjectReference Include="..\..\Utils\WinterRose.DependancyInjection\WinterRose.DependancyInjection.csproj" />
+    <ProjectReference Include="..\..\Utils\WinterRose.ProgressKeeping\WinterRose.ProgressKeeping.csproj" />
     <ProjectReference Include="..\..\Utils\WinterRose.Uris\WinterRose.Uris.csproj" />
     <ProjectReference Include="..\..\WinterRose.ClientHub.Shared\WinterRose.ClientHub.Shared.csproj" />
     <ProjectReference Include="..\..\WinterRose.Web.Logging\WinterRose.Web.Logging.csproj" />
     <ProjectReference Include="..\Utils\HBOICT_Corp.Utils\WinterRose.Web.Utils.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Eto.Forms" Version="2.11.0" />
+    <PackageReference Include="Eto.Platform.Gtk" Version="2.11.0" />
   </ItemGroup>
 
 </Project>

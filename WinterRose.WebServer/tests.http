@@ -2,3 +2,20 @@
 
 GET {{main_endpoint}}/apps
 Accept: application/winterforge
+
+
+###
+
+GET {{main_endpoint}}/apps/program/diff?from=1_0_0&to=1_0_1
+
+###
+
+GET {{main_endpoint}}/apps/MyGame/versions/1_0_0/file?path=bin/game.exe
+
+###
+
+GET {{main_endpoint}}/apps/program/versions/1_0_0/file?path=README.txt
+
+###
+
+GET {{main_endpoint}}/apps/program/versions/1_0_0/archive

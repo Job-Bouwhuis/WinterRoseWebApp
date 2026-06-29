@@ -12,15 +12,15 @@ public abstract class Application : IApplication
 {
     protected internal CancellationTokenSource cancelSource = new CancellationTokenSource();
     public IServiceProvider Services { get; set; }
-
-
-    private ConcurrentQueue<Action> actions = [];
-    
-    
     private Task? runningTask;
 
     public bool IsRunning { get; private set; }
 
+    public void RunTock()
+    {
+        Tick(cancelSource.Token);
+    }
+    
     public void Run()
     {
         Console.CancelKeyPress += (sender, args) => cancelSource.Cancel();
@@ -32,7 +32,6 @@ public abstract class Application : IApplication
         {
             while (!cancelSource.IsCancellationRequested)
             {
-                InvokeActions();
                 Tick(cancelSource.Token);
             }
         }
@@ -56,7 +55,6 @@ public abstract class Application : IApplication
             {
                 while (!cancelSource.IsCancellationRequested)
                 {
-                    InvokeActions();
                     Tick(cancelSource.Token);
                 }
             }
@@ -73,28 +71,6 @@ public abstract class Application : IApplication
     public void Stop()
     {
         cancelSource?.Cancel();
-    }
-
-    public void Invoke(Action action)
-    {
-        actions.Enqueue(action);
-    }
-
-    public Task<T> InvokeAsync<T>(Func<T> func)
-    {
-        throw new NotImplementedException();
-    }
-
-    private void InvokeActions()
-    {
-        int actionsHandled = 0;
-        while (actions.TryDequeue(out var action))
-        {
-            action();
-            actionsHandled++;
-            if (actionsHandled > 1000)
-                break;
-        }
     }
     
     protected abstract void Tick(CancellationToken token);

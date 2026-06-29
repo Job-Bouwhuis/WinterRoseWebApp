@@ -1,8 +1,11 @@
 ﻿@page "/upload"
 @rendermode RenderMode.InteractiveServer
 
+@using Microsoft.AspNetCore.Authorization
 @using WinterRose.WebServer.Features.FileUploads.Services
 @using WinterRose.WebServer.Features.FileUploads.Models
+
+@attribute [Authorize]
 
 @inject UploadService UploadService
 @inject IJSRuntime JS

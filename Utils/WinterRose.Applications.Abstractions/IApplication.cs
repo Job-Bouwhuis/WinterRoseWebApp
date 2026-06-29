@@ -11,6 +11,4 @@ public interface IApplication
     void Run();
     Task RunAsync();
     void Stop();
-    void Invoke(Action action);
-    Task<T> InvokeAsync<T>(Func<T> func);
 }

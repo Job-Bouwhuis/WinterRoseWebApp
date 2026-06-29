@@ -30,7 +30,7 @@ public partial class UploadService
     {
         var safeName = Sanitize(name);
 
-        var versionEntry = new VersionEntry(Sanitize(version));
+        var versionEntry = new AppVersion(Sanitize(version));
         var safeVersion = versionEntry.ToString(VersionStringFormat.FolderSafe);
 
         var basePath = Path.Combine(uploadsFolder.FullName, safeName);

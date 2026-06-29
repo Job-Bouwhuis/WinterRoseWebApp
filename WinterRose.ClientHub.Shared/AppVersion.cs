@@ -7,7 +7,7 @@ public enum VersionStringFormat
     HumanReadable
 }
 
-public class VersionEntry : IComparable<VersionEntry>
+public class AppVersion : IComparable<AppVersion>
 {
     public string VersionLabel { get; init; } = "";
 
@@ -19,10 +19,10 @@ public class VersionEntry : IComparable<VersionEntry>
 
     public DateTime UploadedAt { get; init; }
 
-    public VersionEntry() { } // Serialization
-    public VersionEntry(string versionLabel, DateTime uploadedAt) : this(versionLabel) => UploadedAt = uploadedAt;
+    public AppVersion() { } // Serialization
+    public AppVersion(string versionLabel, DateTime uploadedAt) : this(versionLabel) => UploadedAt = uploadedAt;
 
-    public VersionEntry(string versionLabel)
+    public AppVersion(string versionLabel)
     {
         VersionLabel = versionLabel;
 
@@ -114,7 +114,7 @@ public class VersionEntry : IComparable<VersionEntry>
     public override string ToString()
         => ToString(VersionStringFormat.HumanReadable);
 
-    public int CompareTo(VersionEntry? other)
+    public int CompareTo(AppVersion? other)
     {
         if (other is null)
             return 1;
@@ -150,7 +150,7 @@ public class VersionEntry : IComparable<VersionEntry>
         return Patch.CompareTo(other.Patch);
     }
 
-    public static bool operator ==(VersionEntry? a, VersionEntry? b)
+    public static bool operator ==(AppVersion? a, AppVersion? b)
     {
         if (ReferenceEquals(a, b))
             return true;
@@ -161,23 +161,23 @@ public class VersionEntry : IComparable<VersionEntry>
         return a.CompareTo(b) == 0;
     }
 
-    public static bool operator !=(VersionEntry? a, VersionEntry? b)
+    public static bool operator !=(AppVersion? a, AppVersion? b)
         => !(a == b);
 
-    public static bool operator <(VersionEntry a, VersionEntry b)
+    public static bool operator <(AppVersion a, AppVersion b)
         => a.CompareTo(b) < 0;
 
-    public static bool operator >(VersionEntry a, VersionEntry b)
+    public static bool operator >(AppVersion a, AppVersion b)
         => a.CompareTo(b) > 0;
 
-    public static bool operator <=(VersionEntry a, VersionEntry b)
+    public static bool operator <=(AppVersion a, AppVersion b)
         => a.CompareTo(b) <= 0;
 
-    public static bool operator >=(VersionEntry a, VersionEntry b)
+    public static bool operator >=(AppVersion a, AppVersion b)
         => a.CompareTo(b) >= 0;
 
     public override bool Equals(object? obj)
-        => obj is VersionEntry other && this == other;
+        => obj is AppVersion other && this == other;
 
     public override int GetHashCode()
         => HashCode.Combine(Major, Minor, Patch, Tag?.ToLowerInvariant());
