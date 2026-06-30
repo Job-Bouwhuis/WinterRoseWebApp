@@ -1,14 +1,99 @@
-﻿:root {
+:root {
+    /* ===================== BASE SURFACES ===================== */
     --nx-bg: #0e0612;
     --nx-bg-elevated: #170c1d;
     --nx-bg-card: #1c0f24;
+
+    --nx-surface-hover: #22122c;
+    --nx-surface-active: #26152f;
+    --nx-surface-selected: #2a1636;
+
+    /* ===================== BORDERS ===================== */
     --nx-border: #2d1640;
     --nx-border-soft: #241433;
+    --nx-border-strong: #3a1d52;
+
+    --nx-border-hover: #3a1d52;
+    --nx-border-active: #4a2268;
+    --nx-border-focus: #fcadff;
+
+    /* ===================== ACCENT SYSTEM ===================== */
     --nx-accent: #fcadff;
     --nx-accent-dim: #c98ed1;
+    --nx-accent-glow: rgba(252, 173, 255, 0.25);
+    --nx-accent-hover: #ffb8ff;
+    --nx-accent-active: #e39ae6;
+
+    /* ===================== TEXT ===================== */
     --nx-text: #ffffff;
     --nx-text-muted: #b8a8c0;
-    --nx-font-display: 'Space Grotesk', system-ui, sans-serif;
-    --nx-font-body: 'Inter', system-ui, sans-serif;
-    --nx-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --nx-text-subtle: #8f7a99;
+    --nx-text-disabled: #6b5a73;
+
+    /* ===================== INTERACTION LAYERS ===================== */
+
+    --nx-hover-opacity: 0.06;
+    --nx-hover-bg: rgba(252, 173, 255, var(--nx-hover-opacity));
+
+    --nx-active-opacity: 0.12;
+    --nx-active-bg: rgba(252, 173, 255, var(--nx-active-opacity));
+
+    --nx-selection-bg: rgba(252, 173, 255, 0.18);
+    --nx-selection-border: rgba(252, 173, 255, 0.35);
+
+    --nx-focus-ring: 0 0 0 3px rgba(252, 173, 255, 0.35);
+    --nx-focus-ring-soft: 0 0 0 2px rgba(252, 173, 255, 0.22);
+
+    --nx-disabled-opacity: 0.45;
+    --nx-disabled-bg: rgba(255, 255, 255, 0.03);
+
+    /* ===================== STATUS COLORS ===================== */
+    --nx-success: #5ee6a8;
+    --nx-success-bg: rgba(94, 230, 168, 0.12);
+
+    --nx-warning: #ffd36e;
+    --nx-warning-bg: rgba(255, 211, 110, 0.12);
+
+    --nx-error: #ff6b8b;
+    --nx-error-bg: rgba(255, 107, 139, 0.12);
+
+    --nx-info: #7ab7ff;
+    --nx-info-bg: rgba(122, 183, 255, 0.12);
+
+    /* ===================== TRANSITIONS ===================== */
+    --nx-transition-fast: 120ms ease;
+    --nx-transition-normal: 180ms ease;
+    --nx-transition-spring: 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
+
+    --nx-hover-lift: translateY(-2px);
+    --nx-active-press: translateY(1px);
+
+    /* ===================== SHADOW SYSTEM ===================== */
+    --nx-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.25);
+    --nx-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --nx-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.45);
+
+    --nx-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.4);
+    --nx-shadow-active: 0 6px 18px rgba(0, 0, 0, 0.3);
+
+    /* ===================== OVERLAY LAYERS ===================== */
+    --nx-overlay: rgba(0, 0, 0, 0.5);
+    --nx-backdrop-blur: blur(10px);
+
+    /* ===================== Z-INDEX SCALE ===================== */
+    --nx-z-base: 0;
+    --nx-z-raised: 10;
+    --nx-z-dropdown: 100;
+    --nx-z-sticky: 200;
+    --nx-z-modal: 1000;
+    --nx-z-toast: 1100;
+
+    /* ===================== TYPOGRAPHY ===================== */
+
+    /* main site font (changed as requested) */
+    --nx-font-body: 'Cascadia Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* keep hierarchy but now aligned to monospace ecosystem */
+    --nx-font-display: var(--nx-font-body);
+    --nx-font-mono: var(--nx-font-body);
 }
