@@ -1,0 +1,103 @@
+﻿@page "/Account/ConfirmEmailChange"
+
+@using System.Text
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using WinterRose.Nexus.Registry.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Confirm email change</PageTitle>
+
+<div class="nexus-auth-card nexus-email-confirm">
+    @if (state is null)
+    {
+        <div class="nexus-text-muted">
+            Processing email change…
+        </div>
+    }
+    else if (state == true)
+    {
+        <div class="nexus-confirm-icon nexus-confirm-success">✓</div>
+        <h1 class="nexus-auth-title">Email updated</h1>
+
+        <p class="nexus-text-muted">
+            Your account email has been successfully changed.
+        </p>
+    }
+    else
+    {
+        <div class="nexus-confirm-icon nexus-confirm-failed">!</div>
+        <h1 class="nexus-auth-title">Update failed</h1>
+
+        <p class="nexus-text-muted">
+            We couldn’t complete your email change. The link may have expired.
+        </p>
+    }
+
+    <StatusMessage Message="@message" />
+</div>
+
+@code {
+    private string? message;
+    private bool? state;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? UserId { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Email { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Code { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserId is null || Email is null || Code is null)
+        {
+            RedirectManager.RedirectToWithStatus(
+                "Account/Login",
+                "Error: Invalid email change confirmation link.",
+                HttpContext);
+
+            state = false;
+            return;
+        }
+
+        var user = await UserManager.FindByIdAsync(UserId);
+        if (user is null)
+        {
+            message = $"Unable to find user with Id '{UserId}'";
+            state = false;
+            return;
+        }
+
+        var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+        var result = await UserManager.ChangeEmailAsync(user, Email, code);
+
+        if (!result.Succeeded)
+        {
+            message = "Error changing email.";
+            state = false;
+            return;
+        }
+
+        var setUserNameResult = await UserManager.SetUserNameAsync(user, Email);
+        if (!setUserNameResult.Succeeded)
+        {
+            message = "Error changing user name.";
+            state = false;
+            return;
+        }
+
+        await SignInManager.RefreshSignInAsync(user);
+
+        message = "Thank you for confirming your email change.";
+        state = true;
+    }
+}

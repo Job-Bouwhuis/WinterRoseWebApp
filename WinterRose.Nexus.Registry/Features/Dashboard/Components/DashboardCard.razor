@@ -1,0 +1,29 @@
+﻿@using WinterRose.Nexus.Registry.Features.Dashboard.Models
+
+<div class="card mb-3 shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">@Model.Title</h5>
+        <p class="card-text">@Model.Description</p>
+
+        <div>
+            <strong>Value:</strong> @Model.Value
+        </div>
+
+        <div>
+            <strong>Status:</strong>
+            @if (Model.IsActive)
+            {
+                <span class="text-success">Active</span>
+            }
+            else
+            {
+                <span class="text-danger">Inactive</span>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public DashboardCardModel Model { get; set; } = default!;
+}

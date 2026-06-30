@@ -1,0 +1,97 @@
+﻿@page "/Account/ResendEmailConfirmation"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using WinterRose.Nexus.Registry.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Resend confirmation</PageTitle>
+
+<div class="nexus-auth-card">
+
+    <div class="nexus-access-icon">
+        <div class="nexus-lock-pulse">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
+                <path d="M4 6h16v12H4z"
+                      stroke="currentColor"
+                      stroke-width="1.5"/>
+
+                <path d="M4 6l8 7 8-7"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"/>
+            </svg>
+        </div>
+    </div>
+
+    <h1 class="nexus-auth-title">Resend confirmation email</h1>
+
+    <p class="nexus-text-muted">
+        If you didn’t receive your verification email, we can send it again. Make sure to check your spam folder too.
+    </p>
+
+    <StatusMessage Message="@message" />
+
+    <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" role="alert" />
+
+        <div class="nexus-floating mb-3">
+            <InputText @bind-Value="Input.Email" class="nexus-input" placeholder="name@example.com" />
+            <label>Email</label>
+            <ValidationMessage For="() => Input.Email" class="text-danger" />
+        </div>
+
+        <div class="nexus-access-actions">
+            <button type="submit" class="nexus-btn nexus-btn-primary w-100">
+                Resend email
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private string? message;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        Input ??= new();
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        var user = await UserManager.FindByEmailAsync(Input.Email!);
+        if (user is null)
+        {
+            message = "Verification email sent. Please check your email.";
+            return;
+        }
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code });
+        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
+
+        message = "Verification email sent. Please check your email.";
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+    }
+}

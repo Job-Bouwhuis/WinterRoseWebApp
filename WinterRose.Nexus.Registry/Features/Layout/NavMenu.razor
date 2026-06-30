@@ -1,0 +1,125 @@
+﻿@implements IDisposable
+@rendermode InteractiveServer
+
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS 
+
+<div class="nx-rail" id="nxRail">
+
+    <div class="nx-rail-inner">
+
+        <div class="nx-brand">
+            <a href="" class="nx-brand-link">
+                <span class="nx-brand-text">Nexus Registry</span>
+                <span class="material-symbols-rounded nx-brand-mark" aria-hidden="true">deployed_code</span>
+            </a>
+        </div>
+
+        <div class="nx-search">
+            <input type="search"
+                   class="nx-search-input"
+                   placeholder="Search apps"
+                   aria-label="Search apps"
+                   @bind="searchQuery"
+                   @bind:event="oninput"
+                   @onkeydown="OnSearchKeyDown"/>
+            <button type="button" class="nx-search-btn" title="Search" @onclick="RunSearch">
+                <span class="material-symbols-rounded" aria-hidden="true">search</span>
+            </button>
+        </div>
+
+        <nav class="nx-nav">
+            <NavLink class="nx-link" href="" Match="NavLinkMatch.All" title="Home">
+                <span class="nx-label">Home</span>
+                <span class="material-symbols-rounded nx-icon" aria-hidden="true">home</span>
+            </NavLink>
+
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink class="nx-link" href="upload" title="Upload app">
+                        <span class="nx-label">Upload app</span>
+                        <span class="material-symbols-rounded nx-icon" aria-hidden="true">upload</span>
+                    </NavLink>
+
+                    <NavLink class="nx-link" href="Account/Manage" title="@context.User.Identity?.Name">
+                        <span class="nx-label">@context.User.Identity?.Name</span>
+                        <span class="material-symbols-rounded nx-icon" aria-hidden="true">person</span>
+                    </NavLink>
+
+                    <form action="Account/Logout" method="post" class="nx-form">
+                        <AntiforgeryToken/>
+                        <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
+                        <button type="submit" class="nx-link nx-link-btn" title="Logout">
+                            <span class="nx-label">Logout</span>
+                            <span class="material-symbols-rounded nx-icon" aria-hidden="true">logout</span>
+                        </button>
+                    </form>
+                </Authorized>
+                <NotAuthorized>
+                    <NavLink class="nx-link" href="Account/Register" title="Register">
+                        <span class="nx-label">Register</span>
+                        <span class="material-symbols-rounded nx-icon" aria-hidden="true">person_add</span>
+                    </NavLink>
+
+                    <NavLink class="nx-link" href="Account/Login" title="Login">
+                        <span class="nx-label">Login</span>
+                        <span class="material-symbols-rounded nx-icon" aria-hidden="true">badge</span>
+                    </NavLink>
+                </NotAuthorized>
+            </AuthorizeView>
+        </nav>
+
+    </div>
+</div>
+
+<!-- mobile-only toggle, unchanged behavior from before -->
+<input type="checkbox" title="Navigation menu" class="nx-mobile-toggle" id="nxMobileToggle"/>
+<label for="nxMobileToggle" class="nx-mobile-handle" aria-hidden="true">
+    <span class="bi bi-list"></span>
+</label>
+
+@code {
+    private string? currentUrl;
+    private string searchQuery = "";
+
+    protected override void OnInitialized()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await RunSearch();
+    }
+
+    // TODO: search is not implemented yet. Frontend is pre-built so the
+    // backend can be wired in later without further markup changes.
+    private Task RunSearch()
+    {
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/navRail.js");
+            await module.InvokeVoidAsync("initNavRail");
+        }
+    }
+
+}
+

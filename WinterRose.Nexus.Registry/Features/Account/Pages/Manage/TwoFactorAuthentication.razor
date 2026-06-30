@@ -1,0 +1,202 @@
+﻿@page "/Account/Manage/TwoFactorAuthentication"
+
+@using Microsoft.AspNetCore.Http.Features
+@using Microsoft.AspNetCore.Identity
+@using WinterRose.Nexus.Registry.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Two-factor authentication</PageTitle>
+
+<div class="nexus-page-section">
+
+    <div class="nexus-text-title">Two-factor authentication</div>
+
+    <StatusMessage />
+
+    @if (!canTrack)
+    {
+        <div class="nexus-card nexus-card--danger">
+            <div class="nexus-text-title-sm">
+                Privacy restriction
+            </div>
+
+            <div class="nexus-text-muted">
+                You must accept the privacy and cookie policy before enabling two-factor authentication.
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="nexus-grid">
+
+            <!-- STATUS PANEL -->
+            <div class="nexus-card">
+
+                <div class="nexus-text-title-sm">
+                    Status
+                </div>
+
+                <div class="nexus-stack">
+
+                    <div class="nexus-text-muted">
+                        Two-factor authentication is
+                        <strong>@(is2faEnabled ? "enabled" : "disabled")</strong>
+                    </div>
+
+                    @if (is2faEnabled)
+                    {
+                        <div class="nexus-text-muted">
+                            Recovery codes left:
+                            <strong>@recoveryCodesLeft</strong>
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+
+            <!-- RECOVERY CODES WARNING -->
+            @if (is2faEnabled && recoveryCodesLeft <= 3)
+            {
+                <div class="nexus-card nexus-card--danger">
+
+                    <div class="nexus-text-title-sm">
+                        Recovery codes warning
+                    </div>
+
+                    <div class="nexus-text-muted">
+                        @if (recoveryCodesLeft == 0)
+                        {
+                            <span>You have no recovery codes left.</span>
+                        }
+                        else if (recoveryCodesLeft == 1)
+                        {
+                            <span>You only have 1 recovery code left.</span>
+                        }
+                        else
+                        {
+                            <span>You only have @recoveryCodesLeft recovery codes left.</span>
+                        }
+                    </div>
+
+                </div>
+            }
+
+            <!-- ACTIONS -->
+            <div class="nexus-card">
+
+                <div class="nexus-text-title-sm">
+                    Actions
+                </div>
+
+                <div class="nexus-actions">
+
+                    @if (is2faEnabled)
+                    {
+                        @if (isMachineRemembered)
+                        {
+                            <form @formname="forget-browser"
+                                  @onsubmit="OnSubmitForgetBrowserAsync"
+                                  method="post">
+
+                                <AntiforgeryToken />
+
+                                <button type="submit"
+                                        class="nexus-btn nexus-btn--small">
+                                    Forget this browser
+                                </button>
+
+                            </form>
+                        }
+
+                        <a href="Account/Manage/Disable2fa"
+                           class="nexus-btn nexus-btn--danger">
+                            Disable 2FA
+                        </a>
+
+                        <a href="Account/Manage/GenerateRecoveryCodes"
+                           class="nexus-btn nexus-btn--primary">
+                            Reset recovery codes
+                        </a>
+                    }
+
+                </div>
+
+            </div>
+
+            <!-- AUTHENTICATOR -->
+            <div class="nexus-card">
+
+                <div class="nexus-text-title-sm">
+                    Authenticator app
+                </div>
+
+                <div class="nexus-actions">
+
+                    @if (!hasAuthenticator)
+                    {
+                        <a href="Account/Manage/EnableAuthenticator"
+                           class="nexus-btn nexus-btn--primary">
+                            Add authenticator app
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="Account/Manage/EnableAuthenticator"
+                           class="nexus-btn nexus-btn--primary">
+                            Set up authenticator app
+                        </a>
+
+                        <a href="Account/Manage/ResetAuthenticator"
+                           class="nexus-btn nexus-btn--danger">
+                            Reset authenticator app
+                        </a>
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+
+</div>
+
+@code {
+    private bool canTrack;
+    private bool hasAuthenticator;
+    private int recoveryCodesLeft;
+    private bool is2faEnabled;
+    private bool isMachineRemembered;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await UserManager.GetUserAsync(HttpContext.User);
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        canTrack = HttpContext.Features.Get<ITrackingConsentFeature>()?.CanTrack ?? true;
+        hasAuthenticator = await UserManager.GetAuthenticatorKeyAsync(user) is not null;
+        is2faEnabled = await UserManager.GetTwoFactorEnabledAsync(user);
+        isMachineRemembered = await SignInManager.IsTwoFactorClientRememberedAsync(user);
+        recoveryCodesLeft = await UserManager.CountRecoveryCodesAsync(user);
+    }
+
+    private async Task OnSubmitForgetBrowserAsync()
+    {
+        await SignInManager.ForgetTwoFactorClientAsync();
+
+        RedirectManager.RedirectToCurrentPageWithStatus(
+            "The current browser has been forgotten. When you login again from this browser you will be prompted for your 2fa code.",
+            HttpContext);
+    }
+}

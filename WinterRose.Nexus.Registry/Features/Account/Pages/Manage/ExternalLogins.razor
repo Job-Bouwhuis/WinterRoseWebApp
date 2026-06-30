@@ -1,0 +1,188 @@
+﻿@page "/Account/Manage/ExternalLogins"
+
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using WinterRose.Nexus.Registry.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IUserStore<ApplicationUser> UserStore
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Manage external logins</PageTitle>
+
+<div class="nexus-card nexus-card--center">
+
+    <div class="nexus-text-title">External logins</div>
+
+    <StatusMessage />
+
+    @if (currentLogins?.Count > 0)
+    {
+        <div class="nexus-section-title">Connected accounts</div>
+
+        <div class="nexus-list">
+
+            @foreach (var login in currentLogins)
+            {
+                <div class="nexus-list-item">
+
+                    <div class="nexus-list-main">
+                        @login.ProviderDisplayName
+                    </div>
+
+                    <div class="nexus-list-actions">
+
+                        @if (showRemoveButton)
+                        {
+                            <form @formname="@($"remove-login-{login.LoginProvider}")"
+                                  @onsubmit="OnSubmitAsync"
+                                  method="post">
+
+                                <AntiforgeryToken />
+
+                                <input type="hidden" name="@nameof(LoginProvider)" value="@login.LoginProvider" />
+                                <input type="hidden" name="@nameof(ProviderKey)" value="@login.ProviderKey" />
+
+                                <button type="submit"
+                                        class="nexus-btn nexus-btn--danger">
+                                    Remove
+                                </button>
+
+                            </form>
+                        }
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
+    @if (otherLogins?.Count > 0)
+    {
+        <div class="nexus-section-title">Add another login provider</div>
+
+        <div class="nexus-provider-grid">
+
+            <form action="Account/Manage/LinkExternalLogin"
+                  method="post">
+
+                <AntiforgeryToken />
+
+                @foreach (var provider in otherLogins)
+                {
+                    <button type="submit"
+                            class="nexus-btn nexus-btn--secondary"
+                            name="Provider"
+                            value="@provider.Name">
+                        @provider.DisplayName
+                    </button>
+                }
+
+            </form>
+
+        </div>
+    }
+
+</div>
+
+@code {
+    public const string LinkLoginCallbackAction = "LinkLoginCallback";
+
+    private ApplicationUser? user;
+    private IList<UserLoginInfo>? currentLogins;
+    private IList<AuthenticationScheme>? otherLogins;
+    private bool showRemoveButton;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private string? LoginProvider { get; set; }
+
+    [SupplyParameterFromForm]
+    private string? ProviderKey { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Action { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserManager.GetUserAsync(HttpContext.User);
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        currentLogins = await UserManager.GetLoginsAsync(user);
+        otherLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync())
+            .Where(auth => currentLogins.All(ul => auth.Name != ul.LoginProvider))
+            .ToList();
+
+        string? passwordHash = null;
+        if (UserStore is IUserPasswordStore<ApplicationUser> userPasswordStore)
+        {
+            passwordHash = await userPasswordStore.GetPasswordHashAsync(user, HttpContext.RequestAborted);
+        }
+
+        showRemoveButton = passwordHash is not null || currentLogins.Count > 1;
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method) && Action == LinkLoginCallbackAction)
+        {
+            await OnGetLinkLoginCallbackAsync();
+        }
+    }
+
+    private async Task OnSubmitAsync()
+    {
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        var result = await UserManager.RemoveLoginAsync(user, LoginProvider!, ProviderKey!);
+        if (!result.Succeeded)
+        {
+            RedirectManager.RedirectToCurrentPageWithStatus("Error: The external login was not removed.", HttpContext);
+        }
+        else
+        {
+            await SignInManager.RefreshSignInAsync(user);
+            RedirectManager.RedirectToCurrentPageWithStatus("The external login was removed.", HttpContext);
+        }
+    }
+
+    private async Task OnGetLinkLoginCallbackAsync()
+    {
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        var info = await SignInManager.GetExternalLoginInfoAsync(userId);
+        if (info is null)
+        {
+            RedirectManager.RedirectToCurrentPageWithStatus("Error: Could not load external login info.", HttpContext);
+            return;
+        }
+
+        var result = await UserManager.AddLoginAsync(user, info);
+        if (result.Succeeded)
+        {
+            // Clear the existing external cookie to ensure a clean login process
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+
+            RedirectManager.RedirectToCurrentPageWithStatus("The external login was added.", HttpContext);
+        }
+        else
+        {
+            RedirectManager.RedirectToCurrentPageWithStatus("Error: The external login was not added. External logins can only be associated with one account.", HttpContext);
+        }
+    }
+}

@@ -1,0 +1,14 @@
+﻿:root {
+    --nx-bg: #0e0612;
+    --nx-bg-elevated: #170c1d;
+    --nx-bg-card: #1c0f24;
+    --nx-border: #2d1640;
+    --nx-border-soft: #241433;
+    --nx-accent: #fcadff;
+    --nx-accent-dim: #c98ed1;
+    --nx-text: #ffffff;
+    --nx-text-muted: #b8a8c0;
+    --nx-font-display: 'Space Grotesk', system-ui, sans-serif;
+    --nx-font-body: 'Inter', system-ui, sans-serif;
+    --nx-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}

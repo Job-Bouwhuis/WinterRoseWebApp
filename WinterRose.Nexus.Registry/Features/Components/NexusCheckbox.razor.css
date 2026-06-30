@@ -1,0 +1,103 @@
+﻿.nexus-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    cursor: pointer;
+    user-select: none;
+
+    font-family: var(--nx-font-body);
+    color: var(--nx-text);
+}
+
+.nexus-check-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.nexus-check-track {
+    width: 44px;
+    height: 24px;
+
+    border-radius: 999px;
+
+    background: var(--nx-bg);
+    border: 1px solid var(--nx-border-soft);
+
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    padding: 2px;
+
+    transition:
+            background 0.25s ease,
+            border-color 0.25s ease,
+            box-shadow 0.25s ease;
+}
+
+.nexus-check-input:checked + .nexus-check-track {
+    background: var(--nx-accent);
+    border-color: var(--nx-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--nx-accent) 20%, transparent);
+}
+
+.nexus-check-thumb {
+    width: 20px;
+    height: 20px;
+
+    border-radius: 50%;
+
+    background: #e6d6ff;
+
+    display: grid;
+    place-items: center;
+
+    transition:
+            margin 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+            background 0.25s ease,
+            transform 0.2s ease;
+}
+
+.nexus-check-input:checked + .nexus-check-track .nexus-check-thumb {
+    margin-left: auto;
+    background: var(--nx-bg);
+}
+
+.nexus-check-icon {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+
+    transition:
+            opacity 0.2s ease,
+            transform 0.2s ease;
+}
+
+.nexus-check-icon-x {
+    stroke: var(--nx-accent);
+    opacity: 1;
+    transform: scale(1);
+}
+
+.nexus-check-input:checked + .nexus-check-track .nexus-check-icon-x {
+    opacity: 0;
+    transform: scale(0.6);
+}
+
+.nexus-check-input:checked + .nexus-check-track .nexus-check-thumb {
+    margin-left: auto;
+    transform: none;
+}
+
+.nexus-check:active .nexus-check-thumb {
+    transform: scale(0.92);
+    transform-origin: center;
+}

@@ -1,0 +1,32 @@
+﻿<StatusMessage Message="@StatusMessage" />
+
+<div class="nexus-card nexus-card--center">
+
+    <div class="nexus-text-title">Recovery codes</div>
+
+    <div class="nexus-alert nexus-alert--warning">
+        <div class="nexus-text-subtitle">
+            <strong>Put these codes in a safe place.</strong>
+        </div>
+
+        <div class="nexus-text-muted">
+            If you lose your device and don't have the recovery codes you will lose access to your account.
+        </div>
+    </div>
+
+    <div class="nexus-recovery-list">
+        @foreach (var recoveryCode in RecoveryCodes)
+        {
+            <code class="nexus-recovery-code">@recoveryCode</code>
+        }
+    </div>
+
+</div>
+
+@code {
+    [Parameter]
+    public string[] RecoveryCodes { get; set; } = [];
+
+    [Parameter]
+    public string? StatusMessage { get; set; }
+}

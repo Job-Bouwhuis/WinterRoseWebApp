@@ -1,0 +1,22 @@
+﻿@inherits LayoutComponentBase
+
+<div class="nexus-account-shell">
+
+    <header class="nexus-page-header">
+        <div class="nexus-text-title">Manage your account</div>
+        <div class="nexus-text-subtitle">Change your account settings</div>
+    </header>
+
+    <div class="nexus-account-grid">
+
+        <aside class="nexus-panel nexus-account-sidebar">
+            <ManageNavMenu />
+        </aside>
+
+        <main class="nexus-panel nexus-account-content">
+            @Body
+        </main>
+
+    </div>
+
+</div>

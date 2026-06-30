@@ -1,0 +1,370 @@
+/* ============================================================
+   Right-edge nav rail
+   Three states: collapsed (default) -> near (proximity) -> active (hover)
+   Sized to content only, overlays the page, never reserves layout space.
+   ============================================================ */
+
+.nx-rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: auto;
+    height: 100vh;
+    z-index: 1030;
+
+    display: flex;
+    align-items: stretch;
+
+    pointer-events: none;
+}
+
+.nx-rail-inner {
+    pointer-events: auto;
+
+    margin-top: auto;
+    margin-bottom: auto;
+
+    width: max-content;
+    max-width: none;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    background: var(--nx-bg-elevated, #170c1d);
+    border: 1px solid var(--nx-border, #2d1640);
+    border-left: none;
+    border-radius: 0 14px 14px 0;
+
+    padding: 0.85rem 0.6rem;
+
+    transform: translateX(calc(-100% + 44px));
+
+    transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+        max-width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.25s ease;
+
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+
+/* proximity: nudge out a little further, still mostly collapsed */
+.nx-rail.nx-near .nx-rail-inner {
+    transform: translateX(calc(-100% + 52px));
+}
+
+/* active: cursor directly over the rail - full reveal */
+.nx-rail.nx-active .nx-rail-inner {
+    transform: translateX(0);
+}
+
+/* ===================== brand ===================== */
+
+.nx-brand {
+    padding: 0 0.4rem 0.6rem;
+    margin-bottom: 0.4rem;
+    border-bottom: 1px solid var(--nx-border-soft, #241433);
+    white-space: nowrap;
+}
+
+.nx-brand-link {
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+    gap: 0.5rem;
+
+    color: var(--nx-text, #fff);
+    text-decoration: none;
+    justify-content: space-between;
+}
+
+.nx-brand-mark {
+    flex: 0 0 1.2rem;
+
+    width: 1.2rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 1.1rem;
+
+    flex-shrink: 0;
+}
+
+.nx-brand-text {
+    flex: 1;
+
+    font-family: var(--nx-font-display, inherit);
+    font-weight: 600;
+    font-size: 0.95rem;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    transition-delay: 0s;
+}
+
+.nx-rail.nx-active .nx-brand-text {
+    opacity: 1;
+    transition-delay: 0.1s;
+}
+
+/* ===================== search ===================== */
+
+.nx-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    padding: 0 0.1rem 0.6rem;
+    margin-bottom: 0.4rem;
+
+    border-bottom: 1px solid var(--nx-border-soft, #241433);
+}
+
+.nx-rail.nx-active .nx-search-input {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.nx-search-input {
+    opacity: 0;
+    transform: translateX(-6px);
+    pointer-events: none;
+
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    
+    flex: 1;
+    min-width: 0;
+
+    background: var(--nx-bg-card, #1c0f24);
+    border: 1px solid var(--nx-border, #2d1640);
+    border-radius: 8px;
+
+    color: var(--nx-text, #fff);
+    font-family: var(--nx-font-body, inherit);
+    font-size: 0.82rem;
+
+    padding: 0.4rem 0.55rem;
+}
+
+.nx-search-btn {
+    flex-shrink: 0;
+}
+
+.nx-search-btn:hover {
+    color: var(--nx-accent, #fcadff);
+    transform: translateY(-1px);
+}
+
+.nx-rail.nx-active .nx-search-input {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.nx-search-input::placeholder {
+    color: var(--nx-text-muted, #b8a8c0);
+}
+
+.nx-search-input:focus {
+    outline: none;
+    border-color: var(--nx-accent, #fcadff);
+    box-shadow: 0 0 0 2px rgba(252, 173, 255, 0.25);
+}
+
+.nx-search-btn {
+    flex: 0 0 1.2rem;
+    width: 1.2rem;
+    height: 1.2rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: transparent;
+    border: none;
+
+    color: var(--nx-text-muted, #b8a8c0);
+    cursor: pointer;
+
+    font-size: 1rem;
+
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+
+    transition: color 0.15s ease, transform 0.12s ease;
+}
+
+.nx-search-btn:hover {
+    border-color: var(--nx-accent, #fcadff);
+    color: var(--nx-accent, #fcadff);
+}
+
+/* ===================== nav links ===================== */
+
+.nx-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.nx-link {
+    gap: 0.5rem;
+}
+
+.nx-link,
+.nx-link-btn {
+    display: flex;
+    flex-direction: row;
+
+    width: 100%;
+    padding: 0.55rem 0.5rem;
+    border-radius: 8px;
+
+    color: var(--nx-text-muted, #b8a8c0);
+    text-decoration: none;
+    font-family: var(--nx-font-body, inherit);
+    font-size: 0.88rem;
+
+    background: transparent;
+    border: none;
+    cursor: pointer;
+
+    align-items: center;
+}
+
+.nx-icon {
+    flex: 0 0 1.2rem;
+    width: 1.2rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 1rem;
+    flex-shrink: 0;
+
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
+.nx-label {
+    flex: 1;
+
+    opacity: 0;
+    transition: opacity 0.12s ease;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+
+    padding-right: 0.6rem;
+}
+
+.nx-rail.nx-active .nx-label {
+    opacity: 1;
+    transition-delay: 0.08s;
+}
+
+.nx-form {
+    margin: 0;
+}
+
+/* ===================== mobile ===================== */
+
+.nx-mobile-toggle {
+    display: none;
+}
+
+.nx-mobile-handle {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .nx-rail {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: auto;
+        height: 100vh;
+        width: 78vw;
+        max-width: 300px;
+
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+    }
+
+    .nx-rail-inner {
+        max-width: none;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        transform: translateX(calc(-100% + 54px));
+    }
+
+    .nx-rail.nx-near .nx-rail-inner,
+    .nx-rail.nx-active .nx-rail-inner {
+        transform: translateX(calc(-100% + 64px));
+        max-width: none;
+    }
+
+    .nx-brand-text,
+    .nx-search-input,
+    .nx-label {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .nx-mobile-toggle:checked ~ .nx-rail {
+        transform: translateX(0);
+    }
+
+    .nx-mobile-handle {
+        display: flex;
+        position: fixed;
+        top: 0.75rem;
+        left: 1rem;
+        right: auto;
+        z-index: 1031;
+
+        width: 42px;
+        height: 42px;
+        align-items: center;
+        justify-content: center;
+
+        background: var(--nx-bg-elevated, #170c1d);
+        border: 1px solid var(--nx-border, #2d1640);
+        border-radius: 10px;
+        color: var(--nx-text, #fff);
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+}
+
+/* ===================== layout: full-width content ===================== */
+
+.content {
+    padding-top: 1.5rem;
+    max-width: 1080px;
+    margin: 0 auto;
+}
+
+/* prevent body scroll behind the rail when its hit-area overlaps content
+   on hover - content itself is never pushed or resized */
+body {
+    overflow-x: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nx-rail-inner,
+    .nx-label,
+    .nx-brand-text,
+    .nx-search-input,
+    .nx-rail {
+        transition: none !important;
+    }
+}

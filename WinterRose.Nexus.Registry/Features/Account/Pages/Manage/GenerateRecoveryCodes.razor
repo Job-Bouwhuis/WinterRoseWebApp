@@ -1,0 +1,100 @@
+﻿@page "/Account/Manage/GenerateRecoveryCodes"
+
+@using Microsoft.AspNetCore.Identity
+@using WinterRose.Nexus.Registry.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<GenerateRecoveryCodes> Logger
+
+<PageTitle>Generate recovery codes</PageTitle>
+
+<div class="nexus-card nexus-card--center">
+
+    @if (recoveryCodes is not null)
+    {
+        <ShowRecoveryCodes RecoveryCodes="recoveryCodes.ToArray()" StatusMessage="@message" />
+    }
+    else
+    {
+        <div class="nexus-text-title">
+            Generate recovery codes
+        </div>
+
+        <StatusMessage Message="@message" />
+
+        <div class="nexus-alert nexus-alert--warning">
+
+            <div class="nexus-text-subtitle">
+                <strong>Store these codes somewhere safe</strong>
+            </div>
+
+            <div class="nexus-text-muted">
+                If you lose your device and don’t have recovery codes, you will lose access to your account.
+            </div>
+
+            <div class="nexus-text-muted">
+                Generating new recovery codes does not change your authenticator keys.
+                If you want to change your authenticator setup, you should
+                <a class="nexus-link"
+                   href="Account/Manage/ResetAuthenticator">
+                    reset your authenticator keys
+                </a>.
+            </div>
+
+        </div>
+
+        <form @formname="generate-recovery-codes"
+              @onsubmit="OnSubmitAsync"
+              method="post">
+
+            <AntiforgeryToken />
+
+            <button class="nexus-btn nexus-btn--danger"
+                    type="submit">
+                Generate recovery codes
+            </button>
+
+        </form>
+    }
+</div>
+
+@code {
+    private string? message;
+    private ApplicationUser? user;
+    private IEnumerable<string>? recoveryCodes;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserManager.GetUserAsync(HttpContext.User);
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        var isTwoFactorEnabled = await UserManager.GetTwoFactorEnabledAsync(user);
+        if (!isTwoFactorEnabled)
+        {
+            throw new InvalidOperationException("Cannot generate recovery codes for user because they do not have 2FA enabled.");
+        }
+    }
+
+    private async Task OnSubmitAsync()
+    {
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        recoveryCodes = await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+        message = "You have generated new recovery codes.";
+
+        Logger.LogInformation("User with ID '{UserId}' has generated new 2FA recovery codes.", userId);
+    }
+}

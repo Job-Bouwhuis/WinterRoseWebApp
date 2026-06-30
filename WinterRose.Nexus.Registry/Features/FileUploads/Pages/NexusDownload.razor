@@ -1,0 +1,182 @@
+@page "/"
+@rendermode InteractiveServer
+
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<link rel="stylesheet" href="css/NexusDownload.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+@* <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" /> *@
+
+<div class="nexus-page">
+
+    <!-- ===================== HERO ===================== -->
+    <section class="hero">
+
+        <div class="hero-copy">
+            <span class="eyebrow">Application distribution for indie devs</span>
+            <h1 class="hero-title">Get your build<br />onto their machine.<br /><span class="accent-text">Fast.</span></h1>
+            <p class="hero-sub">
+                Nexus is a lightweight distribution layer built for small teams and solo developers.
+                It shortens the gap between "I changed the code" and "the tester is running it"
+                and stays useful long after testing is done, as a real way to ship your app or game to players.
+            </p>
+        </div>
+
+        <div class="hero-diagram" aria-hidden="true">
+            <svg viewBox="0 0 320 140" class="sync-svg">
+                <defs>
+                    <linearGradient id="packetGlow" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#fcadff" stop-opacity="0" />
+                        <stop offset="50%" stop-color="#fcadff" stop-opacity="1" />
+                        <stop offset="100%" stop-color="#fcadff" stop-opacity="0" />
+                    </linearGradient>
+                </defs>
+
+                <line x1="48" y1="70" x2="272" y2="70" class="sync-track" />
+
+                <g class="node node-dev">
+                    <rect x="16" y="46" width="64" height="48" rx="10" class="node-box" />
+                    <text x="48" y="74" text-anchor="middle" class="node-label">DEV</text>
+                </g>
+
+                <g class="node node-tester">
+                    <rect x="240" y="46" width="64" height="48" rx="10" class="node-box" />
+                    <text x="272" y="74" text-anchor="middle" class="node-label">USER</text>
+                </g>
+
+                <circle r="4" class="packet" cx="48" cy="70">
+                    <animateMotion dur="2.6s" repeatCount="indefinite"
+                                   path="M0,0 L224,0" />
+                    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="2.6s" repeatCount="indefinite" />
+                </circle>
+            </svg>
+            <span class="diagram-caption">delta update, in transit</span>
+        </div>
+    </section>
+
+    <!-- ===================== DOWNLOAD BOX ===================== -->
+    <section class="download-box" id="downloadBox">
+
+        <div class="os-banner" id="osBanner">
+            <span class="os-banner-dot"></span>
+            <span id="osBannerText">Detecting your system&hellip;</span>
+        </div>
+
+        <div class="download-grid">
+
+            <div class="download-card" id="cardWindows" data-os="windows">
+                <div class="card-top">
+                    <span class="os-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M3 5.5L10.5 4.4V11H3V5.5M11.5 4.3L21 3V11H11.5V4.3M3 12H10.5V18.7L3 17.6V12M11.5 12H21V20.1L11.5 18.8V12Z" /></svg>
+                    </span>
+                    <div>
+                        <h3>Windows</h3>
+                        <span class="arch-tag">x64 &middot; Intel / AMD</span>
+                    </div>
+                </div>
+                <p class="card-note">Windows 10 and later.</p>
+                <button class="dl-button" @onclick="DownloadWindowsBuild">
+                    <span>Download for Windows</span>
+                    <span class="dl-meta">.exe</span>
+                </button>
+            </div>
+
+            <div class="download-card" id="cardLinux" data-os="linux">
+                <div class="card-top">
+                    <span class="os-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M14.62 19.16c-.06.39-.61.81-1.27 1.13-.66.32-1.43.49-1.35.49-.92 0-1.81-.21-2.55-.59-.55-.28-.93-.62-1.07-.98a.7.7 0 01-.05-.39c.04-.21.18-.36.46-.5.49-.25 1.18-.43 1.66-.59-.18-.13-.33-.27-.42-.43-.13-.22-.13-.46.02-.7.18-.29.51-.5.86-.66-.32-.21-.55-.46-.6-.78-.07-.4.16-.79.55-1.07-.31-.34-.45-.73-.36-1.13.13-.58.71-1.04 1.31-1.27-.1-.39-.06-.79.16-1.13.34-.53 1.03-.79 1.69-.79.66 0 1.35.26 1.69.79.22.34.26.74.16 1.13.6.23 1.18.69 1.31 1.27.09.4-.05.79-.36 1.13.39.28.62.67.55 1.07-.05.32-.28.57-.6.78.35.16.68.37.86.66.15.24.15.48.02.7-.09.16-.24.3-.42.43.48.16 1.17.34 1.66.59.28.14.42.29.46.5a.7.7 0 01-.05.39c-.14.36-.52.7-1.07.98-.74.38-1.63.59-2.55.59-.92 0-1.79-.21-2.51-.59z" /></svg>
+                    </span>
+                    <div>
+                        <h3>Linux</h3>
+                        <span class="arch-tag">x64 &middot; Intel / AMD</span>
+                    </div>
+                </div>
+                <p class="card-note">Most modern distributions.</p>
+                <button class="dl-button" @onclick="DownloadLinuxBuild">
+                    <span>Download for Linux</span>
+                    <span class="dl-meta">.AppImage</span>
+                </button>
+            </div>
+
+        </div>
+
+        <p class="mac-note" id="macNote" hidden>
+            Nexus doesn't currently support macOS. The downloads above stay available if you need them for another machine.
+        </p>
+
+    </section>
+
+    <!-- ===================== WHAT IT DOES ===================== -->
+    <section class="explainer">
+
+        <div class="explainer-item">
+            <h3>Close the testing loop</h3>
+            <p>
+                Push a build and your tester gets it without you walking a drive over or fighting cloud-storage
+                links. When dev and tester aren't the same machine, that gap is where momentum dies, Nexus
+                keeps it short.
+            </p>
+        </div>
+
+        <div class="explainer-item">
+            <h3>Download only what changed</h3>
+            <p>
+                Updates ship as the difference between versions, not the whole app again. Smaller pushes,
+                faster installs, less waiting around for a build that's 95% identical to the last one.
+            </p>
+        </div>
+
+        <div class="explainer-item">
+            <h3>Let the app update itself while running</h3>
+            <p>
+                Opt in, and your app can ask Nexus if a new version exists, then hand off to the Nexus client to
+                fetch it and relaunch. A pre-built library handles the wiring, nothing happens unless you turn it on.
+            </p>
+        </div>
+
+    </section>
+
+    <footer class="page-footer">
+        <span>Nexus is built for small teams who'd rather ship than babysit distribution.</span>
+        <NavLink class="nx-link-btn" @onclick="MoreInfoClicked">More about Nexus</NavLink>
+    </footer>
+
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/nexusDownload.js");
+            await module.InvokeVoidAsync("detectOS");
+        }
+    }
+
+    private void MoreInfoClicked()
+    {
+        Navigation.NavigateTo("/nexus/info");
+    }
+
+    // TODO: wire up to the same download/build-resolution service the Nexus
+    // client itself calls when fetching builds for other apps. Should resolve
+    // the latest published "windows" launch target for the nexus app entry
+    // and stream/redirect to the actual file.
+    private Task DownloadWindowsBuild()
+    {
+        // TODO: implement
+        return Task.CompletedTask;
+    }
+
+    // TODO: wire up to the same download/build-resolution service the Nexus
+    // client itself calls when fetching builds for other apps. Should resolve
+    // the latest published "linux" launch target for the nexus app entry
+    // and stream/redirect to the actual file.
+    private Task DownloadLinuxBuild()
+    {
+        // TODO: implement
+        return Task.CompletedTask;
+    }
+}

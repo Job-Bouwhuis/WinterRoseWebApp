@@ -1,0 +1,48 @@
+﻿@page "/dashboard"
+
+@rendermode InteractiveServer
+
+
+@using Features.Dashboard.Models
+@using Features.Dashboard.Services
+@using WinterRose.Nexus.Registry.Features.Dashboard.Components
+
+@inject DashboardDataService DashboardDataService
+@inject ILogger<Dashboard> logger
+
+<h3>System Dashboard</h3>
+
+<button class="btn btn-primary mb-3" @onclick="Reload">
+    Refresh Data
+</button>
+
+@if (cards is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @foreach (var card in cards)
+    {
+        <DashboardCard Model="card" />
+    }
+}
+
+@code {
+    private List<DashboardCardModel>? cards;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        cards = await DashboardDataService.GetCardsAsync();
+    }
+
+    private async Task Reload()
+    {
+        await Load();
+    }
+}

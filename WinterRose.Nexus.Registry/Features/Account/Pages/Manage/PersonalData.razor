@@ -1,0 +1,70 @@
+﻿@page "/Account/Manage/PersonalData"
+
+@using Microsoft.AspNetCore.Identity
+@using WinterRose.Nexus.Registry.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Personal Data</PageTitle>
+
+<div class="nexus-page-section">
+
+    <div class="nexus-text-title">Personal data</div>
+
+    <StatusMessage />
+
+    <div class="nexus-card">
+
+        <div class="nexus-text-muted">
+            Your account contains personal data that you have provided. You can download or permanently delete it.
+        </div>
+
+        <div class="nexus-warning-box">
+            <div class="nexus-warning-title">
+                Important
+            </div>
+
+            <div class="nexus-text-muted">
+                Deleting this data will permanently remove your account. This action cannot be undone.
+            </div>
+        </div>
+
+        <div class="nexus-actions">
+
+            <form action="Account/Manage/DownloadPersonalData"
+                  method="post">
+
+                <AntiforgeryToken />
+
+                <button type="submit"
+                        class="nexus-btn nexus-btn--primary">
+                    Download data
+                </button>
+
+            </form>
+
+            <a href="Account/Manage/DeletePersonalData"
+               class="nexus-btn nexus-btn--danger">
+                Delete account
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user  = await UserManager.GetUserAsync(HttpContext.User);
+        if (user is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+        }
+    }
+}

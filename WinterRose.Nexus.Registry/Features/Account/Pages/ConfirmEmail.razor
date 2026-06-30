@@ -1,0 +1,80 @@
+﻿@page "/Account/ConfirmEmail"
+
+@using System.Text
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using WinterRose.Nexus.Registry.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Confirm email</PageTitle>
+
+<div class="nexus-auth-card nexus-email-confirm">
+    @if (isSuccess is null)
+    {
+        <div class="nexus-text-muted">
+            Confirming your email…
+        </div>
+    }
+    else if (isSuccess == true)
+    {
+        <div class="nexus-confirm-icon nexus-confirm-success">✓</div>
+        <h1 class="nexus-auth-title">Email confirmed</h1>
+
+        <p class="nexus-text-muted">
+            Your account is now fully verified.
+        </p>
+    }
+    else
+    {
+        <div class="nexus-confirm-icon nexus-confirm-failed">!</div>
+        <h1 class="nexus-auth-title">Confirmation failed</h1>
+
+        <p class="nexus-text-muted">
+            That link is invalid or has expired.
+        </p>
+    }
+
+    <StatusMessage Message="@statusMessage" />
+</div>
+
+@code {
+    private string? statusMessage;
+    private bool? isSuccess;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? UserId { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Code { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserId is null || Code is null)
+        {
+            RedirectManager.RedirectTo("");
+            return;
+        }
+
+        var user = await UserManager.FindByIdAsync(UserId);
+        if (user is null)
+        {
+            HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
+            statusMessage = $"Error loading user with ID {UserId}";
+            isSuccess = false;
+            return;
+        }
+
+        var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+        var result = await UserManager.ConfirmEmailAsync(user, code);
+
+        isSuccess = result.Succeeded;
+        statusMessage = result.Succeeded
+            ? "Thank you for confirming your email."
+            : "Error confirming your email.";
+    }
+}

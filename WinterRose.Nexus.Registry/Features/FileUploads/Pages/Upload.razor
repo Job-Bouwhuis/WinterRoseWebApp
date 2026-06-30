@@ -1,0 +1,392 @@
+﻿@page "/upload"
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Authorization
+@using WinterRose.Nexus.Registry.Features.FileUploads.Services
+@using WinterRose.Nexus.Registry.Features.FileUploads.Models
+@using WinterRose.Nexus.Shared
+
+@attribute [Authorize]
+
+@inject UploadService UploadService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Publish Application</h2>
+
+    <!-- Drop / Select Area -->
+    @if (files is null)
+    {
+        <div id="dropZone"
+             class="border rounded p-4 text-center mb-4"
+             style="border-style: dashed; cursor: pointer;"
+             @onclick="TriggerFilePicker">
+
+            <p class="mb-1">Drop your build folder or click to select</p>
+            <small class="text-muted">Nexus will infer metadata automatically</small>
+        </div>
+    }
+
+    <InputFile id="folderInput"
+               OnChange="HandleFiles"
+               multiple
+               webkitdirectory
+               style="display:none;"/>
+
+    @if (files is not null)
+    {
+        <div class="mb-3">
+            <strong>@files.Count files detected</strong>
+            <button class="btn btn-sm btn-link" @onclick="ResetSelection">change selection</button>
+        </div>
+
+        <!-- Metadata Preview -->
+        <div class="card mb-3 p-3">
+
+            <h5>Detected Application Info</h5>
+
+            <div class="mb-2">
+                <label class="nexus-text">Internal Name</label>
+                <input class="nexus-input" @bind="name"/>
+                <small class="text-muted">Suggested: @suggestedName</small>
+            </div>
+
+            <div class="mb-2">
+                <label class="nexus-text">Version</label>
+                <div class="d-flex align-items-center gap-2">
+                    <input type="number" min="0" class="nexus-input" style="width: 5rem;"
+                           @bind="versionMajor" @bind:event="oninput" @bind:after="UpdateVersion"/>
+                    <span>.</span>
+                    <input type="number" min="0" class="nexus-input" style="width: 5rem;"
+                           @bind="versionMinor" @bind:event="oninput" @bind:after="UpdateVersion"/>
+                    <span>.</span>
+                    <input type="number" min="0" class="nexus-input" style="width: 5rem;"
+                           @bind="versionPatch" @bind:event="oninput" @bind:after="UpdateVersion"/>
+                    <span>-</span>
+                    <input class="nexus-input" placeholder="optional, e.g. beta"
+                           @bind="versionSuffix" @bind:event="oninput" @bind:after="UpdateVersion"/>
+                </div>
+                <small class="text-muted">Suggested: @suggestedVersion &middot; Resulting version: @version</small>
+            </div>
+
+            <div class="mb-2">
+                <label class="nexus-text-muted">Publisher</label>
+                <input class="nexus-input" @bind="publisher"/>
+            </div>
+
+            <div class="mb-2">
+                <label class="nexus-text">Short Description</label>
+                <input class="nexus-input" @bind="shortDescription"/>
+            </div>
+
+            <div class="mb-2">
+                <label class="nexus-text">Long Description</label>
+                <textarea class="nexus-input" rows="3" @bind="longDescription"></textarea>
+            </div>
+
+            <div class="mb-2">
+                <label class="nexus-text">Tags (comma separated)</label>
+                <input class="nexus-input" @bind="tagsInput"/>
+            </div>
+
+        </div>
+
+        <!-- Launch target preview -->
+        @if (launchTargetOptions.Count > 0)
+        {
+            <div class="mb-2">
+                <label class="nexus-text">Launch Target</label>
+                <select class="nexus-floating" @bind="launchTarget">
+                    @foreach (var option in launchTargetOptions)
+                    {
+                        <option value="@option">@option</option>
+                    }
+                </select>
+            </div>
+        }
+    }
+
+    <button class="btn btn-primary"
+            @onclick="CommitUpload"
+            disabled="@(!CanUpload)">
+        Publish to Nexus
+    </button>
+
+    @if (result is not null)
+    {
+        <div class="alert alert-success mt-3">
+            Uploaded to: @result.TargetPath
+        </div>
+    }
+</div>
+
+@code
+{
+    private string name = "";
+    private string suggestedName = "";
+
+    private int versionMajor = 1;
+    private int versionMinor = 0;
+    private int versionPatch = 0;
+    private string versionSuffix = "";
+
+    private string version = "1.0.0";
+    private string suggestedVersion = "";
+
+    private string publisher = "";
+    private string shortDescription = "";
+    private string longDescription = "";
+    private string tagsInput = "";
+
+    private IJSObjectReference? module;
+
+    private IReadOnlyList<IBrowserFile>? files;
+    private string[]? relativePaths;
+
+    private UploadResult? result;
+
+    private string launchTarget = "";
+    private List<string> launchTargetOptions = new();
+
+    private static readonly HashSet<string> NonExecutableExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".txt", ".md", ".json", ".xml", ".yml", ".yaml", ".png", ".jpg", ".jpeg",
+        ".gif", ".bmp", ".ico", ".svg", ".dll", ".pdb", ".config", ".lock",
+        ".gitignore", ".gitattributes", ".license", ".log", ".zip", ".tar",
+        ".gz", ".7z", ".rar", ".pak", ".dat", ".bin", ".dat", ".html", ".css",
+        ".js", ".ts", ".csproj", ".sln", ".editorconfig", ".pdf"
+    };
+
+    private bool CanUpload =>
+        files is not null &&
+        !string.IsNullOrWhiteSpace(name) &&
+        !string.IsNullOrWhiteSpace(version);
+
+    private async Task TriggerFilePicker()
+    {
+        if (module is null)
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/fileUpload.js");
+
+        await module.InvokeVoidAsync("triggerClick", "folderInput");
+    }
+
+    private async Task HandleFiles(InputFileChangeEventArgs e)
+    {
+        files = e.GetMultipleFiles(int.MaxValue);
+
+        module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/fileUpload.js");
+        relativePaths = await module.InvokeAsync<string[]>("getRelativePaths", "folderInput");
+
+        suggestedName = SuggestNameFromFiles(relativePaths.ToList());
+        name = suggestedName;
+
+        suggestedVersion = GuessVersionFromFiles(files);
+        ApplySuggestedVersion(suggestedVersion);
+
+        launchTargetOptions = DetectLaunchTargets(relativePaths.ToList());
+        launchTarget = launchTargetOptions.FirstOrDefault() ?? "";
+
+        StateHasChanged();
+    }
+
+    private void ResetSelection()
+    {
+        files = null;
+        relativePaths = null;
+        name = "";
+        suggestedName = "";
+        launchTarget = "";
+        launchTargetOptions = new();
+        versionMajor = 1;
+        versionMinor = 0;
+        versionPatch = 0;
+        versionSuffix = "";
+        version = "1.0.0";
+        suggestedVersion = "";
+    }
+
+    private void ApplySuggestedVersion(string suggested)
+    {
+        // suggested is expected as "x.y.z" or "x.y.z-suffix"
+        var dashIndex = suggested.IndexOf('-');
+        var core = dashIndex >= 0 ? suggested[..dashIndex] : suggested;
+        var suffix = dashIndex >= 0 ? suggested[(dashIndex + 1)..] : "";
+
+        var parts = core.Split('.');
+
+        versionMajor = parts.Length > 0 && int.TryParse(parts[0], out var maj) ? maj : 1;
+        versionMinor = parts.Length > 1 && int.TryParse(parts[1], out var min) ? min : 0;
+        versionPatch = parts.Length > 2 && int.TryParse(parts[2], out var pat) ? pat : 0;
+        versionSuffix = suffix;
+
+        UpdateVersion();
+    }
+
+    private void UpdateVersion()
+    {
+        version = $"{versionMajor}.{versionMinor}.{versionPatch}";
+
+        if (!string.IsNullOrWhiteSpace(versionSuffix))
+            version += $"-{versionSuffix.Trim()}";
+    }
+
+    private string DetectLaunchTarget(IReadOnlyList<string> files)
+    {
+        var exe = files.FirstOrDefault(f =>
+            f.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+
+        if (exe is not null)
+            return exe;
+
+        var sh = files.FirstOrDefault(f =>
+            f.EndsWith(".sh", StringComparison.OrdinalIgnoreCase));
+
+        if (sh is not null)
+            return sh;
+
+        var rootCandidates = files
+            .Where(f => !f.Contains('/') && !f.Contains('\\'))
+            .ToList();
+
+        return rootCandidates.FirstOrDefault() ?? files[0];
+    }
+
+    private string SuggestNameFromFiles(IReadOnlyList<string> files)
+    {
+        var exe = files.FirstOrDefault(f =>
+            f.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+
+        if (exe is not null)
+            return CleanNameFromFile(exe);
+
+        var rootFiles = files
+            .Where(f => !f.Contains('/') && !f.Contains('\\'))
+            .ToList();
+
+        if (rootFiles.Count > 0)
+            return CleanNameFromFile(rootFiles[0]);
+
+        return CleanNameFromFile(files[0]);
+    }
+
+    private string CleanNameFromFile(string fileName)
+    {
+        var name = Path.GetFileNameWithoutExtension(fileName);
+
+        name = System.Text.RegularExpressions.Regex.Replace(
+            name,
+            @"(\d+(\.\d+)+|\bv\d+\b)",
+            "",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        return name.Replace("_", " ")
+            .Replace("-", " ")
+            .Trim();
+    }
+
+    private string GuessVersionFromFiles(IReadOnlyList<IBrowserFile> files)
+    {
+        var exe = files.FirstOrDefault(f =>
+            f.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+
+        if (exe is null)
+            return "1.0.0";
+
+        var name = Path.GetFileNameWithoutExtension(exe.Name);
+
+        var match = System.Text.RegularExpressions.Regex.Match(name, @"\d+(\.\d+)+");
+
+        return match.Success ? match.Value : "1.0.0";
+    }
+
+    private async Task CommitUpload()
+    {
+        if (files is null || relativePaths is null)
+            return;
+
+        var uploads = files.Zip(relativePaths, (file, path) => (file, path));
+
+        var tags = tagsInput
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+
+        var appEntry = new AppEntry
+        {
+            Name = name,
+            DisplayName = string.IsNullOrWhiteSpace(name) ? suggestedName : name,
+            Publisher = publisher,
+            ShortDescription = shortDescription,
+            LongDescription = longDescription,
+            IconPath = "",
+            Tags = tags
+        };
+
+        var versionObj = new AppVersion(version)
+        {
+            LaunchTarget = new AppLaunchTarget
+            {
+                RelativePath = launchTarget,
+                Arguments = []
+            },
+            Changelog = ""
+        };
+
+        await UploadService.SaveAsync(appEntry, versionObj, uploads);
+
+        Navigation.NavigateTo("/uploads/list");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (files is null)
+        {
+            module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/fileUpload.js");
+            await module.InvokeVoidAsync("setupDropZone", "dropZone", "folderInput");
+        }
+    }
+
+    private List<string> DetectLaunchTargets(IReadOnlyList<string> files)
+    {
+        var exeFiles = files
+            .Where(f => f.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var shFiles = files
+            .Where(f => f.EndsWith(".sh", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var linuxBinaries = files
+            .Where(f => !exeFiles.Contains(f) && !shFiles.Contains(f))
+            .Where(IsLikelyLinuxBinary)
+            .ToList();
+
+        return exeFiles
+            .Concat(linuxBinaries)
+            .Concat(shFiles)
+            .ToList();
+    }
+
+    private bool IsLikelyLinuxBinary(string filePath)
+    {
+        var fileName = Path.GetFileName(filePath);
+
+        // Skip dotfiles/hidden files (.gitignore, .env, etc.)
+        if (fileName.StartsWith('.'))
+            return false;
+
+        var ext = Path.GetExtension(fileName);
+
+        // Has a recognized non-executable extension -> not a binary
+        if (!string.IsNullOrEmpty(ext) && NonExecutableExtensions.Contains(ext))
+            return false;
+
+        // Has *any* extension at all -> probably not a Linux binary
+        // (Linux executables conventionally have no extension)
+        if (!string.IsNullOrEmpty(ext))
+            return false;
+
+        return true;
+    }
+}

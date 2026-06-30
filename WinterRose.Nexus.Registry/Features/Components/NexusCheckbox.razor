@@ -1,0 +1,35 @@
+﻿<label class="nexus-check">
+    <input
+        type="checkbox"
+        class="nexus-check-input"
+        @bind="Value"
+        @bind:event="onchange" />
+
+    <span class="nexus-check-track">
+        <span class="nexus-check-thumb">
+
+            <!-- X (OFF) -->
+            <svg class="nexus-check-icon nexus-check-icon-x" viewBox="0 0 24 24">
+                <path d="M6 6 L18 18" />
+                <path d="M18 6 L6 18" />
+            </svg>
+
+            <!-- Check (ON) -->
+            <svg class="nexus-check-icon nexus-check-icon-check" viewBox="0 0 24 24">
+                <path d="M4 12.5 L9 18 L20 6" />
+            </svg>
+
+        </span>
+    </span>
+
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <span class="nexus-check-label">@Label</span>
+    }
+</label>
+
+@code {
+    [Parameter] public bool Value { get; set; }
+    [Parameter] public EventCallback<bool> ValueChanged { get; set; }
+    [Parameter] public string? Label { get; set; }
+}
