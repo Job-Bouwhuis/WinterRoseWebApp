@@ -1,18 +1,18 @@
 ﻿.nexus-card {
     background: var(--nx-bg-elevated);
     border: 1px solid var(--nx-border);
-    border-radius: 16px;
+    border-radius: var(--nx-radius-lg);
 
-    padding: 1.5rem;
+    padding: var(--nx-spacing-lg);
 
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--nx-spacing-md);
 }
 
 .nexus-card--center {
     max-width: 520px;
-    margin: 2rem auto;
+    margin: var(--nx-spacing-xl) auto;
 }
 
 .nexus-card--full {
@@ -22,7 +22,6 @@
 .nexus-text-empty {
     text-align: center;
 }
-
 
 .nexus-text {
     color: var(--nx-text);
@@ -52,7 +51,7 @@
     color: var(--nx-accent-dim);
     text-decoration: none;
     font-family: var(--nx-font-mono);
-    font-size: 0.85remF
+    font-size: 0.85rem;
 }
 
 .nexus-link:hover {
@@ -60,14 +59,14 @@
 }
 
 .nexus-btn {
-    border-radius: 10px;
-    padding: 0.7rem 1rem;
+    border-radius: var(--nx-radius-md);
+    padding: var(--nx-button-padding-y) var(--nx-button-padding-x);
 
     font-family: var(--nx-font-body);
     font-size: 0.9rem;
 
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--nx-transition-slow);
 }
 
 .nexus-btn:active {
@@ -78,7 +77,7 @@
     background: transparent;
     border: none;
 
-    padding: 0.25rem 0.25rem;
+    padding: var(--nx-spacing-xs) var(--nx-spacing-xs);
 
     font-family: var(--nx-font-body);
     font-size: 0.9rem;
@@ -91,11 +90,12 @@
     gap: 0.35rem;
 
     text-decoration: none;
+    position: relative;
 
     transition:
-            color 0.15s ease,
-            transform 0.15s ease,
-            filter 0.15s ease;
+            color var(--nx-transition-slow),
+            transform var(--nx-transition-slow),
+            filter var(--nx-transition-slow);
 }
 
 .nexus-btn--link:hover {
@@ -106,10 +106,6 @@
 .nexus-btn--link:active {
     transform: translateY(1px);
     filter: brightness(0.85);
-}
-
-.nexus-btn--link {
-    position: relative;
 }
 
 .nexus-btn--link::after {
@@ -126,7 +122,7 @@
     transform: scaleX(0);
     transform-origin: left;
 
-    transition: transform 0.2s ease;
+    transition: transform var(--nx-transition-slower);
     opacity: 0.6;
 }
 
@@ -152,8 +148,8 @@
 }
 
 .nexus-page-header {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
+    margin-bottom: var(--nx-spacing-lg);
+    padding-bottom: var(--nx-spacing-md);
 
     border-bottom: 1px solid var(--nx-border-soft);
 }
@@ -162,27 +158,27 @@
     max-width: 1080px;
     margin: 0 auto;
 
-    padding: 2rem 1.5rem 4rem;
+    padding: var(--nx-spacing-xl) var(--nx-spacing-lg) var(--nx-spacing-3xl);
 }
 
 .nexus-account-grid {
     display: grid;
     grid-template-columns: 240px 1fr;
-    gap: 2rem;
+    gap: var(--nx-spacing-xl);
     align-items: start;
 }
 
 .nexus-panel {
     background: var(--nx-bg-elevated);
     border: 1px solid var(--nx-border);
-    border-radius: 14px;
+    border-radius: var(--nx-radius-lg);
 
-    padding: 1rem;
+    padding: var(--nx-spacing-md);
 }
 
 .nexus-account-sidebar {
     position: sticky;
-    top: 1.5rem;
+    top: var(--nx-spacing-lg);
 }
 
 .nexus-account-content {
@@ -196,8 +192,8 @@
 .nexus-nav-link {
     display: block;
 
-    padding: 0.55rem 0.75rem;
-    border-radius: 10px;
+    padding: 0.55rem var(--nx-spacing-md);
+    border-radius: var(--nx-radius-md);
 
     color: var(--nx-text-muted);
     text-decoration: none;
@@ -205,7 +201,7 @@
     font-family: var(--nx-font-body);
     font-size: 0.9rem;
 
-    transition: all 0.15s ease;
+    transition: all var(--nx-transition-slow);
 }
 
 .nexus-nav-link:hover {
@@ -223,15 +219,15 @@
 }
 
 .nexus-alert {
-    border-radius: 12px;
-    padding: 1rem;
+    border-radius: var(--nx-radius-md);
+    padding: var(--nx-spacing-md);
 
     border: 1px solid var(--nx-border);
     background: var(--nx-bg-elevated);
 
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--nx-spacing-sm);
 }
 
 .nexus-alert--warning {
@@ -242,19 +238,19 @@
 .nexus-recovery-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
+    gap: var(--nx-spacing-sm);
 
-    margin-top: 1rem;
+    margin-top: var(--nx-spacing-md);
 }
 
 .nexus-recovery-code {
     display: block;
 
-    padding: 0.5rem 0.75rem;
+    padding: var(--nx-spacing-sm) var(--nx-spacing-md);
 
     background: var(--nx-bg);
     border: 1px solid var(--nx-border-soft);
-    border-radius: 8px;
+    border-radius: var(--nx-radius-sm);
 
     font-family: var(--nx-font-mono);
     font-size: 0.85rem;
@@ -268,9 +264,9 @@
 .nexus-form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--nx-spacing-md);
 
-    margin-top: 1rem;
+    margin-top: var(--nx-spacing-md);
 }
 
 .nexus-field {
@@ -284,19 +280,19 @@
     color: var(--nx-text-muted);
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: var(--nx-spacing-xs);
 }
 
 .nexus-floating {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: var(--nx-spacing-xs);
 }
 
 .nexus-floating .nexus-input {
     padding-top: 1.25rem;
-    padding-bottom: 0.5rem;
+    padding-bottom: var(--nx-spacing-sm);
 }
 
 .nexus-floating .nexus-label {
@@ -309,7 +305,7 @@
 
     pointer-events: none;
 
-    transition: transform 0.15s ease, font-size 0.15s ease, top 0.15s ease, color 0.15s ease;
+    transition: transform var(--nx-transition-slow), font-size var(--nx-transition-slow), top var(--nx-transition-slow), color var(--nx-transition-slow);
     background: transparent;
 }
 
@@ -349,7 +345,7 @@
     display: grid;
     place-content: center;
 
-    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color var(--nx-transition-slow), background var(--nx-transition-slow), box-shadow var(--nx-transition-slow);
 }
 
 .nexus-check-input:checked {
@@ -378,26 +374,11 @@
     transform: scale(0.95);
 }
 
-.nexus-input {
-    background: var(--nx-bg);
-    border: 1px solid var(--nx-border-soft);
-    border-radius: 10px;
-
-    padding: 0.65rem 0.75rem;
-
-    color: var(--nx-text);
-    font-family: var(--nx-font-body);
-
-    box-shadow: none;
-    outline: none;
-
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
+.nexus-input,
 .form-control {
     background: var(--nx-bg);
     border: 1px solid var(--nx-border-soft);
-    border-radius: 10px;
+    border-radius: var(--nx-radius-md);
 
     padding: 0.65rem 0.75rem;
 
@@ -407,9 +388,10 @@
     box-shadow: none;
     outline: none;
 
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color var(--nx-transition-slow), box-shadow var(--nx-transition-slow);
 }
 
+.nexus-input:focus,
 .form-control:focus {
     background: var(--nx-bg);
     color: var(--nx-text);
@@ -417,21 +399,14 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--nx-accent) 25%, transparent);
 }
 
-.nexus-input:focus {
-    background: var(--nx-bg);
-    color: var(--nx-text);
-    border-color: var(--nx-accent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--nx-accent) 25%, transparent);
-}
-
 .nexus-validation {
-    color: #ff6b6b;
+    color: var(--nx-danger);
     font-family: var(--nx-font-mono);
     font-size: 0.75rem;
 }
 
 .nexus-validation-summary {
-    color: #ff6b6b;
+    color: var(--nx-danger);
     font-family: var(--nx-font-mono);
     font-size: 0.85rem;
 }
@@ -451,23 +426,23 @@
 }
 
 .nexus-alert--danger {
-    border-color: rgba(255, 80, 80, 0.4);
-    background: rgba(255, 80, 80, 0.08);
+    border-color: var(--nx-danger-border);
+    background: var(--nx-danger-soft);
 }
 
 .nexus-btn--danger {
-    background: rgba(255, 80, 80, 0.15);
-    border: 1px solid rgba(255, 80, 80, 0.5);
+    background: var(--nx-danger-soft);
+    border: 1px solid var(--nx-danger-border);
 
-    color: #ffb3b3;
+    color: var(--nx-danger-text);
     font-weight: 600;
 
     width: 100%;
 }
 
 .nexus-btn--danger:hover {
-    background: rgba(255, 80, 80, 0.25);
-    border-color: rgba(255, 80, 80, 0.7);
+    background: rgba(255, 90, 106, 0.25);
+    border-color: rgba(255, 90, 106, 0.7);
 }
 
 .nexus-btn--danger:active {
@@ -479,7 +454,7 @@
     border: 1px solid var(--nx-border-soft);
 
     padding: 0.65rem 0.75rem;
-    border-radius: 10px;
+    border-radius: var(--nx-radius-md);
 
     color: var(--nx-text-muted);
     font-family: var(--nx-font-mono);
@@ -497,20 +472,20 @@
 .nexus-steps {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--nx-spacing-lg);
 
-    margin-top: 1rem;
+    margin-top: var(--nx-spacing-md);
 }
 
 .nexus-step {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--nx-spacing-sm);
 
-    padding: 1rem;
+    padding: var(--nx-spacing-md);
 
     border: 1px solid var(--nx-border-soft);
-    border-radius: 14px;
+    border-radius: var(--nx-radius-lg);
 
     background: var(--nx-bg-elevated);
 }
@@ -526,7 +501,7 @@
     display: flex;
     justify-content: center;
 
-    margin-top: 0.5rem;
+    margin-top: var(--nx-spacing-sm);
 }
 
 .nexus-kbd {
@@ -534,7 +509,7 @@
 
     padding: 0.6rem 0.9rem;
 
-    border-radius: 10px;
+    border-radius: var(--nx-radius-md);
 
     background: var(--nx-bg);
     border: 1px solid var(--nx-border);
@@ -544,11 +519,11 @@
 }
 
 .nexus-qrcode {
-    margin-top: 0.75rem;
+    margin-top: var(--nx-spacing-sm);
 
     min-height: 160px;
 
-    border-radius: 12px;
+    border-radius: var(--nx-radius-md);
     border: 1px dashed var(--nx-border);
 
     display: flex;
@@ -575,7 +550,7 @@
 .nexus-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--nx-spacing-md);
 }
 
 .nexus-list-item {
@@ -583,10 +558,10 @@
     justify-content: space-between;
     align-items: center;
 
-    padding: 0.9rem 1rem;
+    padding: 0.9rem var(--nx-spacing-md);
 
     border: 1px solid var(--nx-border-soft);
-    border-radius: 12px;
+    border-radius: var(--nx-radius-md);
 
     background: var(--nx-bg-elevated);
 }
@@ -598,15 +573,15 @@
 
 .nexus-list-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--nx-spacing-sm);
 }
 
 .nexus-provider-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: var(--nx-spacing-sm);
 
-    margin-top: 0.5rem;
+    margin-top: var(--nx-spacing-sm);
 }
 
 .nexus-btn--secondary {
@@ -616,11 +591,11 @@
     color: var(--nx-text);
 
     padding: 0.6rem 0.9rem;
-    border-radius: 10px;
+    border-radius: var(--nx-radius-md);
 
     cursor: pointer;
 
-    transition: all 0.15s ease;
+    transition: all var(--nx-transition-slow);
 }
 
 .nexus-btn--secondary:hover {
@@ -635,11 +610,11 @@
 
 .nexus-access-icon {
     color: var(--nx-accent);
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--nx-spacing-sm);
 }
 
 .nexus-access-actions {
-    margin-top: 0.5rem;
+    margin-top: var(--nx-spacing-sm);
     width: 100%;
 }
 
@@ -657,7 +632,7 @@
     position: absolute;
     width: 100%;
     height: 100%;
-    border-radius: 12px;
+    border-radius: var(--nx-radius-md);
     border: 1px solid var(--nx-accent);
     opacity: 0;
     transform: scale(0.9);
@@ -699,7 +674,7 @@
 .nexus-confirm-icon {
     width: 52px;
     height: 52px;
-    border-radius: 14px;
+    border-radius: var(--nx-radius-lg);
 
     display: flex;
     justify-content: center;
@@ -708,29 +683,29 @@
     font-size: 1.6rem;
     font-weight: bold;
 
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--nx-spacing-sm);
 }
 
 .nexus-confirm-success {
     color: var(--nx-accent);
     border: 1px solid var(--nx-accent);
-    box-shadow: 0 0 18px rgba(0, 255, 180, 0.15);
+    box-shadow: 0 0 18px rgba(252, 173, 255, 0.15);
 }
 
 .nexus-confirm-failed {
-    color: #ff5a6a;
-    border: 1px solid #ff5a6a;
-    box-shadow: 0 0 18px rgba(255, 90, 106, 0.12);
+    color: var(--nx-danger);
+    border: 1px solid var(--nx-danger);
+    box-shadow: 0 0 18px var(--nx-danger-soft);
 }
 
 .nexus-confirm {
     text-align: center;
     align-items: center;
     max-width: 460px;
-    margin: 2rem auto;
+    margin: var(--nx-spacing-xl) auto;
 }
 
 .nexus-forgot-password {
     max-width: 460px;
-    margin: 2rem auto;
+    margin: var(--nx-spacing-xl) auto;
 }

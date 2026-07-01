@@ -22,17 +22,9 @@ public static class FileUploadGlobals
     private const string UPLOADS_ROOT = "uploads";
 }
 
-public partial class UploadService
+public class UploadService(IAsyncQueue<UploadCompletedEvent> asyncQueue)
 {
-    private readonly IWebHostEnvironment environment;
-    private readonly UploadQueue uploadQueue;
     private readonly DirectoryInfo uploadsFolder = FileUploadGlobals.uploadsFolder;
-
-    public UploadService(IWebHostEnvironment environment, UploadQueue uploadQueue)
-    {
-        this.environment = environment;
-        this.uploadQueue = uploadQueue;
-    }
 
     public async Task SaveAsync(
         AppEntry appEntry,
@@ -42,10 +34,12 @@ public partial class UploadService
         if (appEntry == null)
             throw new ArgumentNullException(nameof(appEntry));
 
-        if (string.IsNullOrWhiteSpace(appEntry.Name))
+        version.UploadedAt = DateTime.UtcNow;
+        
+        if (string.IsNullOrWhiteSpace(appEntry.AppId))
             throw new InvalidOperationException("App Name is required.");
 
-        var appId = GenerateAppId(appEntry.Name);
+        var appId = GenerateAppId(appEntry.AppId);
         var safeVersion = version.ToString(VersionStringFormat.FolderSafe);
 
         var appRoot = Path.Combine(uploadsFolder.FullName, appId);
@@ -96,8 +90,7 @@ public partial class UploadService
             versionPath,
             version);
 
-        await uploadQueue.Writer.WriteAsync(
-            new UploadCompletedEvent(appId, appRoot, version));
+        asyncQueue.Publish(new UploadCompletedEvent(appId, appRoot, version));
     }
     
     private void WriteAppDetails(string appRoot, AppEntry incoming)
@@ -107,18 +100,16 @@ public partial class UploadService
         AppEntry? existing = null;
 
         if (File.Exists(path))
-            existing = WinterForge.DeserializeFromFile<AppEntry>(path);
+            existing = WinterForge.DeserializeFromHumanReadableFile<AppEntry>(path);
 
         var final = new AppEntry
         {
-            Name = MergeString(incoming.Name, existing?.Name),
+            AppId = MergeString(incoming.AppId, existing?.AppId),
 
             DisplayName = MergeString(incoming.DisplayName, existing?.DisplayName),
             Publisher = MergeString(incoming.Publisher, existing?.Publisher),
             ShortDescription = MergeString(incoming.ShortDescription, existing?.ShortDescription),
             LongDescription = MergeString(incoming.LongDescription, existing?.LongDescription),
-
-            IconPath = MergeString(incoming.IconPath, existing?.IconPath),
 
             Tags = MergeTags(incoming.Tags, existing?.Tags),
 
@@ -126,7 +117,7 @@ public partial class UploadService
             Diffs = existing?.Diffs ?? []
         };
 
-        if (string.IsNullOrWhiteSpace(final.Name))
+        if (string.IsNullOrWhiteSpace(final.AppId))
             throw new InvalidOperationException("App Name missing (required).");
 
         WinterForge.SerializeToFile(final, path, TargetFormat.FormattedHumanReadable);

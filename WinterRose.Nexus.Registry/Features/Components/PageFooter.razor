@@ -1,0 +1,29 @@
+<footer class="nx-page-footer">
+    <div class="nx-page-footer-content">
+        @if (!string.IsNullOrWhiteSpace(Text))
+        {
+            <span class="nx-page-footer-text">@Text</span>
+        }
+        @if (Content != null)
+        {
+            @Content
+        }
+    </div>
+    @if (Actions != null)
+    {
+        <div class="nx-page-footer-actions">
+            @Actions
+        </div>
+    }
+</footer>
+
+@code {
+    [Parameter]
+    public string? Text { get; set; }
+
+    [Parameter]
+    public RenderFragment? Content { get; set; }
+
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+}

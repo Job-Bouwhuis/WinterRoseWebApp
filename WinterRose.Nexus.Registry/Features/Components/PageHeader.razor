@@ -1,0 +1,36 @@
+<div class="nx-page-header">
+    <div class="nx-page-header-content">
+        @if (!string.IsNullOrWhiteSpace(Title))
+        {
+            <h1 class="nx-page-header-title">@Title</h1>
+        }
+        @if (!string.IsNullOrWhiteSpace(Subtitle))
+        {
+            <p class="nx-page-header-subtitle">@Subtitle</p>
+        }
+        @if (HeaderContent != null)
+        {
+            @HeaderContent
+        }
+    </div>
+    @if (Actions != null)
+    {
+        <div class="nx-page-header-actions">
+            @Actions
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    [Parameter]
+    public RenderFragment? HeaderContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+}

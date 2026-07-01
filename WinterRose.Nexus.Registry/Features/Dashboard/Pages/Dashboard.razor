@@ -2,31 +2,35 @@
 
 @rendermode InteractiveServer
 
-
 @using Features.Dashboard.Models
 @using Features.Dashboard.Services
 @using WinterRose.Nexus.Registry.Features.Dashboard.Components
+@using WinterRose.Nexus.Registry.Features.Components
 
 @inject DashboardDataService DashboardDataService
 @inject ILogger<Dashboard> logger
 
-<h3>System Dashboard</h3>
+<PageContainer>
+    <PageHeader Title="System Dashboard" Subtitle="View system status and metrics">
+        <Button Variant="ButtonVariant.Secondary" OnClick="Reload">Refresh Data</Button>
+    </PageHeader>
 
-<button class="btn btn-primary mb-3" @onclick="Reload">
-    Refresh Data
-</button>
-
-@if (cards is null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    @foreach (var card in cards)
+    @if (cards is null)
     {
-        <DashboardCard Model="card" />
+        <Card>
+            <p class="text-muted">Loading...</p>
+        </Card>
     }
-}
+    else
+    {
+        <div class="dashboard-grid">
+            @foreach (var card in cards)
+            {
+                <DashboardCard Model="card" />
+            }
+        </div>
+    }
+</PageContainer>
 
 @code {
     private List<DashboardCardModel>? cards;

@@ -32,7 +32,7 @@ public class AppVersion : IComparable<AppVersion>
     /// <summary>
     /// The time at which this version was uploaded
     /// </summary>
-    public DateTime UploadedAt { get; init; }
+    public DateTime UploadedAt { get; set; }
     
     /// <summary>
     /// Relative path of the application's launch target.
@@ -90,7 +90,11 @@ public class AppVersion : IComparable<AppVersion>
         string[] versionParts = versionPart.Split('_');
 
         if (versionParts.Length != 3)
-            throw new FormatException($"Invalid version format: {input}");
+        {
+            versionParts = versionPart.Split('.');
+            if(versionParts.Length != 3)
+                throw new FormatException($"Invalid version format: {input}");
+        }
 
         if (!ushort.TryParse(versionParts[0], out major) ||
             !ushort.TryParse(versionParts[1], out minor) ||

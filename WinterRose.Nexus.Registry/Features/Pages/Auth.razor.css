@@ -1,0 +1,10 @@
+.auth-greeting {
+    font-size: 1.1rem;
+    color: var(--nx-text);
+    margin: 0;
+}
+
+.auth-greeting strong {
+    color: var(--nx-accent);
+    font-weight: 700;
+}

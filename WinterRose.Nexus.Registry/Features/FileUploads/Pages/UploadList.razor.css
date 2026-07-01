@@ -1,0 +1,105 @@
+.upload-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--nx-spacing-md);
+    margin-bottom: var(--nx-spacing-md);
+    padding-bottom: var(--nx-spacing-md);
+    border-bottom: 1px solid var(--nx-border-soft);
+}
+
+.upload-group-name {
+    font-family: var(--nx-font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--nx-text);
+}
+
+.upload-group-badge {
+    background: var(--nx-bg-card);
+    border: 1px solid var(--nx-border-soft);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--nx-radius-md);
+    font-size: 0.8rem;
+    color: var(--nx-text-muted);
+    font-family: var(--nx-font-mono);
+}
+
+.upload-table-wrapper {
+    overflow-x: auto;
+}
+
+.upload-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.upload-table-head {
+    border-bottom: 1px solid var(--nx-border-soft);
+}
+
+.upload-table-head th {
+    padding: var(--nx-spacing-md);
+    text-align: left;
+    font-family: var(--nx-font-body);
+    font-weight: 600;
+    color: var(--nx-text);
+    font-size: 0.9rem;
+}
+
+.upload-table tbody tr {
+    border-bottom: 1px solid var(--nx-border-soft);
+    transition: background-color var(--nx-transition-fast);
+}
+
+.upload-table tbody tr:hover {
+    background-color: rgba(252, 173, 255, 0.03);
+}
+
+.upload-table td {
+    padding: var(--nx-spacing-md);
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.upload-badge {
+    display: inline-block;
+    background: var(--nx-accent);
+    color: #1c0521;
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--nx-radius-sm);
+    font-family: var(--nx-font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.diff-entries {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nx-spacing-sm);
+}
+
+.diff-entry {
+    display: flex;
+    align-items: center;
+    gap: var(--nx-spacing-sm);
+    padding: var(--nx-spacing-sm);
+    background: var(--nx-bg-card);
+    border: 1px solid var(--nx-border-soft);
+    border-radius: var(--nx-radius-md);
+}
+
+.diff-arrow {
+    color: var(--nx-text-muted);
+    font-weight: bold;
+}
+
+.diff-actions {
+    margin-left: auto;
+    display: flex;
+    gap: var(--nx-spacing-sm);
+}
+
+.fst-italic {
+    font-style: italic;
+}

@@ -1,0 +1,36 @@
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nx-spacing-lg);
+}
+
+.email-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nx-spacing-sm);
+}
+
+.email-value {
+    padding: var(--nx-spacing-md);
+    background: var(--nx-bg);
+    border: 1px solid var(--nx-border-soft);
+    border-radius: var(--nx-radius-md);
+    color: var(--nx-text-muted);
+    font-size: 0.95rem;
+}
+
+.email-value.verified {
+    display: flex;
+    align-items: center;
+    gap: var(--nx-spacing-sm);
+    color: #64c864;
+    font-weight: 500;
+}
+
+.email-value.verified svg {
+    color: #64c864;
+}
+
+.send-verification {
+    align-self: flex-start;
+}

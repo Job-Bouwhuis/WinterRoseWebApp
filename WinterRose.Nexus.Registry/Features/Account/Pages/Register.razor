@@ -1,4 +1,4 @@
-﻿@page "/Account/Register"
+@page "/Account/Register"
 
 @using System.ComponentModel.DataAnnotations
 @using System.Text
@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using WinterRose.Nexus.Registry.Data
+@using WinterRose.Nexus.Registry.Features.Components
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
@@ -17,71 +18,58 @@
 
 <PageTitle>Register</PageTitle>
 
-<div class="nexus-auth-card">
+<PageContainer>
+    <PageHeader Title="Create account" Subtitle="Join the system with a secure account" />
 
-    <div class="nexus-access-icon">
-        <div class="nexus-lock-pulse">
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
-                <path d="M12 12a4 4 0 100-8 4 4 0 000 8z"
-                      stroke="currentColor"
-                      stroke-width="1.5"/>
+    <Card>
+        <StatusMessage Message="@Message" />
 
-                <path d="M4 20c2-5 14-5 16 0"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"/>
-            </svg>
-        </div>
-    </div>
+        <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
+            <DataAnnotationsValidator />
 
-    <h1 class="nexus-auth-title">Create account</h1>
+            <div class="form-group">
+                <TextInput 
+                    Label="Email"
+                    @bind-Value="Input.Email"
+                    InputType="email"
+                    Placeholder="name@example.com"
+                    Required="true"
+                    ShowValidation="true"
+                    ErrorMessage="@GetValidationError(() => Input.Email)" />
 
-    <p class="nexus-text-muted">
-        Join the system with a secure account. You’ll use this to manage your apps, access services, and configure authentication.
-    </p>
+                <TextInput 
+                    Label="Password"
+                    @bind-Value="Input.Password"
+                    InputType="password"
+                    Required="true"
+                    ShowValidation="true"
+                    ErrorMessage="@GetValidationError(() => Input.Password)" />
 
-    <StatusMessage Message="@Message" />
+                <TextInput 
+                    Label="Confirm password"
+                    @bind-Value="Input.ConfirmPassword"
+                    InputType="password"
+                    Required="true"
+                    ShowValidation="true"
+                    ErrorMessage="@GetValidationError(() => Input.ConfirmPassword)" />
+            </div>
 
-    <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
-        <DataAnnotationsValidator />
-        <ValidationSummary class="text-danger" role="alert" />
-
-        <div class="nexus-floating mb-3">
-            <InputText @bind-Value="Input.Email" class="nexus-input" placeholder="name@example.com" />
-            <label>Email</label>
-            <ValidationMessage For="() => Input.Email" class="text-danger" />
-        </div>
-
-        <div class="nexus-floating mb-3">
-            <InputText type="password" @bind-Value="Input.Password" class="nexus-input" placeholder="password" />
-            <label>Password</label>
-            <ValidationMessage For="() => Input.Password" class="text-danger" />
-        </div>
-
-        <div class="nexus-floating mb-3">
-            <InputText type="password" @bind-Value="Input.ConfirmPassword" class="nexus-input" placeholder="confirm password" />
-            <label>Confirm password</label>
-            <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
-        </div>
-
-        <div class="nexus-access-actions">
-            <button type="submit" class="nexus-btn nexus-btn-primary w-100">
+            <Button Variant="ButtonVariant.Primary" Submit="true" class="w-100">
                 Create account
-            </button>
+            </Button>
+        </EditForm>
+
+        <div class="auth-divider">
+            <span>or</span>
         </div>
-    </EditForm>
 
-    <div class="nexus-divider">
-        <span>OR</span>
-    </div>
-
-    <div class="nexus-access-actions">
         <ExternalLoginPicker />
-    </div>
-</div>
+    </Card>
+</PageContainer>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
+    private EditContext editContext = default!;
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = default!;
@@ -94,6 +82,7 @@
     protected override void OnInitialized()
     {
         Input ??= new();
+        editContext = new EditContext(Input);
     }
 
     public async Task RegisterUser(EditContext editContext)
@@ -133,6 +122,27 @@
             await SignInManager.SignInAsync(user, isPersistent: false);
             RedirectManager.RedirectTo(ReturnUrl);
         }
+    }
+
+    private string? GetValidationError<TValue>(System.Linq.Expressions.Expression<Func<TValue>> accessor)
+    {
+        try
+        {
+            if (editContext != null && editContext.IsModified())
+            {
+                var fieldName = GetFieldName(accessor);
+                var field = editContext.Field(fieldName);
+                return editContext.GetValidationMessages(field).FirstOrDefault();
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    private string GetFieldName<TValue>(System.Linq.Expressions.Expression<Func<TValue>> accessor)
+    {
+        var expression = (System.Linq.Expressions.MemberExpression)accessor.Body;
+        return expression.Member.Name;
     }
 
     private ApplicationUser CreateUser()

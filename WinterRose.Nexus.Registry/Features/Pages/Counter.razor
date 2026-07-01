@@ -1,13 +1,18 @@
 ﻿@page "/counter"
 @rendermode InteractiveServer
 
-<PageTitle>Counter</PageTitle>
+@using WinterRose.Nexus.Registry.Features.Components
 
-<h1>Counter</h1>
+<PageContainer>
+    <PageHeader Title="Counter" Subtitle="A simple interactive counter example" />
 
-<p role="status">Current count: @currentCount</p>
-
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+    <Card>
+        <div class="counter-demo">
+            <p class="counter-status">Current count: <strong>@currentCount</strong></p>
+            <Button Variant="ButtonVariant.Primary" OnClick="IncrementCount">Click me</Button>
+        </div>
+    </Card>
+</PageContainer>
 
 @code {
     private int currentCount = 0;

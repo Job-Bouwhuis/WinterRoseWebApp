@@ -1,0 +1,17 @@
+.nx-page-container {
+    max-width: var(--nx-max-width);
+    margin: 0 auto;
+    padding: var(--nx-spacing-2xl) var(--nx-spacing-lg);
+
+    background: var(--nx-bg);
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 768px) {
+    .nx-page-container {
+        padding: var(--nx-spacing-xl) var(--nx-spacing-md);
+    }
+}

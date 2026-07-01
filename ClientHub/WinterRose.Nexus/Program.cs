@@ -25,7 +25,7 @@ _ = typeof(ByteArrayValueProvider);
 App host = null;
 
 // this is for testing purposes.
-args = ["winterrose://show-window"];
+//args = ["winterrose://show-window"];
 
 ServiceBuilder lockServicesBuilder = new ServiceBuilder();
 lockServicesBuilder.AddApplicationMutex("winterrose.hub");

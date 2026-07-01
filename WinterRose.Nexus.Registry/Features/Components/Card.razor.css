@@ -1,0 +1,19 @@
+.nx-card {
+    background: var(--nx-bg-elevated);
+    border: 1px solid var(--nx-border);
+    border-radius: var(--nx-radius-lg);
+    padding: var(--nx-spacing-lg);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--nx-spacing-md);
+
+    transition:
+        background-color var(--nx-transition-base),
+        border-color var(--nx-transition-base),
+        box-shadow var(--nx-transition-base);
+}
+
+.nx-card:hover {
+    border-color: var(--nx-border);
+}

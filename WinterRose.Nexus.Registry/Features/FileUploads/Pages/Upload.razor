@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using WinterRose.Nexus.Registry.Features.FileUploads.Services
 @using WinterRose.Nexus.Registry.Features.FileUploads.Models
+@using WinterRose.Nexus.Registry.Features.Components
 @using WinterRose.Nexus.Shared
 
 @attribute [Authorize]
@@ -12,115 +13,118 @@
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
-<div class="container mt-4">
+<PageContainer>
+    <PageHeader Title="Publish Application" Subtitle="Upload a new build or version" />
 
-    <h2 class="mb-4">Publish Application</h2>
-
-    <!-- Drop / Select Area -->
     @if (files is null)
     {
-        <div id="dropZone"
-             class="border rounded p-4 text-center mb-4"
-             style="border-style: dashed; cursor: pointer;"
-             @onclick="TriggerFilePicker">
-
-            <p class="mb-1">Drop your build folder or click to select</p>
-            <small class="text-muted">Nexus will infer metadata automatically</small>
-        </div>
+        <!-- Drop / Select Area -->
+        <Card>
+            <div id="dropZone"
+                 class="upload-drop-zone"
+                 @onclick="TriggerFilePicker">
+                <div class="upload-drop-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                </div>
+                <p class="upload-drop-text">Drop your build folder or click to select</p>
+                <small class="text-muted">Nexus will infer metadata automatically</small>
+            </div>
+        </Card>
     }
 
     <InputFile id="folderInput"
                OnChange="HandleFiles"
                multiple
                webkitdirectory
-               style="display:none;"/>
+               style="display:none;" />
 
     @if (files is not null)
     {
-        <div class="mb-3">
-            <strong>@files.Count files detected</strong>
-            <button class="btn btn-sm btn-link" @onclick="ResetSelection">change selection</button>
+        <div class="nx-spacing-md">
+            <div class="upload-status">
+                <strong>@files.Count files detected</strong>
+                <Button Variant="ButtonVariant.Link" OnClick="ResetSelection">change selection</Button>
+            </div>
         </div>
 
         <!-- Metadata Preview -->
-        <div class="card mb-3 p-3">
+        <Card>
+            <div class="form-group">
+                <h3 class="form-section-title">Detected Application Info</h3>
 
-            <h5>Detected Application Info</h5>
+                <TextInput Label="Internal Name" @bind-Value="name" />
+                <small class="nx-input-helper">Suggested: @suggestedName</small>
 
-            <div class="mb-2">
-                <label class="nexus-text">Internal Name</label>
-                <input class="nexus-input" @bind="name"/>
-                <small class="text-muted">Suggested: @suggestedName</small>
-            </div>
+                <div class="form-group">
+                    <label class="nx-input-label">Version</label>
+                    <div class="version-editor">
+                        <NumericInput Class="version-number"
+                                      @bind-Value="versionMajor"
+                                      @bind-Value:after="UpdateVersion"
+                                      Min="0" />
 
-            <div class="mb-2">
-                <label class="nexus-text">Version</label>
-                <div class="d-flex align-items-center gap-2">
-                    <input type="number" min="0" class="nexus-input" style="width: 5rem;"
-                           @bind="versionMajor" @bind:event="oninput" @bind:after="UpdateVersion"/>
-                    <span>.</span>
-                    <input type="number" min="0" class="nexus-input" style="width: 5rem;"
-                           @bind="versionMinor" @bind:event="oninput" @bind:after="UpdateVersion"/>
-                    <span>.</span>
-                    <input type="number" min="0" class="nexus-input" style="width: 5rem;"
-                           @bind="versionPatch" @bind:event="oninput" @bind:after="UpdateVersion"/>
-                    <span>-</span>
-                    <input class="nexus-input" placeholder="optional, e.g. beta"
-                           @bind="versionSuffix" @bind:event="oninput" @bind:after="UpdateVersion"/>
+                        <span class="version-separator">.</span>
+
+                        <NumericInput Class="version-number"
+                                      @bind-Value="versionMinor"
+                                      @bind-Value:after="UpdateVersion"
+                                      Min="0" />
+
+                        <span class="version-separator">.</span>
+
+                        <NumericInput Class="version-number"
+                                      @bind-Value="versionPatch"
+                                      @bind-Value:after="UpdateVersion"
+                                      Min="0" />
+
+                        <span class="version-separator">-</span>
+
+                        <TextInput Class="version-suffix"
+                                   @bind-Value="versionSuffix"
+                                   @bind-Value:after="UpdateVersion"
+                                   Placeholder="optional, e.g. beta" />
+                    </div>
+                    <small class="nx-input-helper">Suggested: @suggestedVersion &middot; Resulting version: @version</small>
                 </div>
-                <small class="text-muted">Suggested: @suggestedVersion &middot; Resulting version: @version</small>
-            </div>
 
-            <div class="mb-2">
-                <label class="nexus-text-muted">Publisher</label>
-                <input class="nexus-input" @bind="publisher"/>
+                <TextInput Label="Publisher" @bind-Value="publisher" />
+                <TextInput Label="Short Description" @bind-Value="shortDescription" />
+                <TextArea Label="Long Description" @bind-Value="longDescription" Rows="3" />
+                <TextInput Label="Tags (comma separated)" @bind-Value="tagsInput" />
             </div>
-
-            <div class="mb-2">
-                <label class="nexus-text">Short Description</label>
-                <input class="nexus-input" @bind="shortDescription"/>
-            </div>
-
-            <div class="mb-2">
-                <label class="nexus-text">Long Description</label>
-                <textarea class="nexus-input" rows="3" @bind="longDescription"></textarea>
-            </div>
-
-            <div class="mb-2">
-                <label class="nexus-text">Tags (comma separated)</label>
-                <input class="nexus-input" @bind="tagsInput"/>
-            </div>
-
-        </div>
+        </Card>
 
         <!-- Launch target preview -->
         @if (launchTargetOptions.Count > 0)
         {
-            <div class="mb-2">
-                <label class="nexus-text">Launch Target</label>
-                <select class="nexus-floating" @bind="launchTarget">
-                    @foreach (var option in launchTargetOptions)
-                    {
-                        <option value="@option">@option</option>
-                    }
-                </select>
+            <Card>
+                <div class="form-group">
+                    <Select Label="Launch Target" @bind-Value="launchTarget" 
+                           Options="launchTargetOptions.Select(o => new Select.SelectOption { Value = o, Label = o }).ToList()" />
+                </div>
+            </Card>
+        }
+
+        <div class="button-group">
+            <Button Variant="ButtonVariant.Primary" 
+                   Disabled="@(!CanUpload)" 
+                   OnClick="CommitUpload">
+                Publish to Nexus
+            </Button>
+        </div>
+
+        @if (result is not null)
+        {
+            <div class="alert alert-success">
+                Uploaded to: @result.TargetPath
             </div>
         }
     }
-
-    <button class="btn btn-primary"
-            @onclick="CommitUpload"
-            disabled="@(!CanUpload)">
-        Publish to Nexus
-    </button>
-
-    @if (result is not null)
-    {
-        <div class="alert alert-success mt-3">
-            Uploaded to: @result.TargetPath
-        </div>
-    }
-</div>
+</PageContainer>
 
 @code
 {
@@ -187,8 +191,6 @@
 
         launchTargetOptions = DetectLaunchTargets(relativePaths.ToList());
         launchTarget = launchTargetOptions.FirstOrDefault() ?? "";
-
-        StateHasChanged();
     }
 
     private void ResetSelection()
@@ -314,12 +316,11 @@
 
         var appEntry = new AppEntry
         {
-            Name = name,
+            AppId = name,
             DisplayName = string.IsNullOrWhiteSpace(name) ? suggestedName : name,
             Publisher = publisher,
             ShortDescription = shortDescription,
             LongDescription = longDescription,
-            IconPath = "",
             Tags = tags
         };
 
@@ -340,11 +341,17 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (files is null)
-        {
-            module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/fileUpload.js");
-            await module.InvokeVoidAsync("setupDropZone", "dropZone", "folderInput");
-        }
+        if (!firstRender)
+            return;
+
+        module = await JS.InvokeAsync<IJSObjectReference>(
+            "import",
+            "./js/fileUpload.js");
+
+        await module.InvokeVoidAsync(
+            "setupDropZone",
+            "dropZone",
+            "folderInput");
     }
 
     private List<string> DetectLaunchTargets(IReadOnlyList<string> files)

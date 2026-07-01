@@ -1,0 +1,20 @@
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nx-spacing-lg);
+}
+
+.profile-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nx-spacing-sm);
+}
+
+.profile-value {
+    padding: var(--nx-spacing-md);
+    background: var(--nx-bg);
+    border: 1px solid var(--nx-border-soft);
+    border-radius: var(--nx-radius-md);
+    color: var(--nx-text-muted);
+    font-size: 0.95rem;
+}

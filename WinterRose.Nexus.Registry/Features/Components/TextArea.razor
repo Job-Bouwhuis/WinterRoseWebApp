@@ -1,0 +1,84 @@
+@{
+    var textareaId = Id ?? Guid.NewGuid().ToString();
+}
+
+<div class="nx-textarea-group">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label for="@textareaId" class="nx-textarea-label">
+            @Label
+            @if (Required)
+            {
+                <span class="nx-textarea-required" aria-label="required">*</span>
+            }
+        </label>
+    }
+
+    <textarea 
+        id="@textareaId"
+        class="nx-textarea @TextareaClass"
+        @bind="Value"
+        @bind:event="oninput"
+        @bind:after="OnValueChanged"
+        placeholder="@Placeholder"
+        disabled="@Disabled"
+        required="@Required"
+        rows="@Rows"
+        @onchange="OnChange"></textarea>
+
+    @if (!string.IsNullOrWhiteSpace(HelperText))
+    {
+        <small class="nx-textarea-helper">@HelperText</small>
+    }
+
+    @if (ShowValidation && !string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <span class="nx-textarea-error">@ErrorMessage</span>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter]
+    public string? Label { get; set; }
+
+    [Parameter]
+    public string? Placeholder { get; set; }
+
+    [Parameter]
+    public string? HelperText { get; set; }
+
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> ValueChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<ChangeEventArgs> OnChange { get; set; }
+
+    [Parameter]
+    public string? TextareaClass { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public bool Required { get; set; }
+
+    [Parameter]
+    public bool ShowValidation { get; set; }
+
+    [Parameter]
+    public int Rows { get; set; } = 4;
+
+    private async Task OnValueChanged()
+    {
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

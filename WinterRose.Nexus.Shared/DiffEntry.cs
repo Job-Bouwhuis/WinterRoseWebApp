@@ -1,7 +1,7 @@
 ﻿namespace WinterRose.Nexus.Shared;
 
 /// <summary>
-/// A diff file, e.g. 1_0_0_TO_1_1_0 inside /Uploads/MyApp/Diffs/
+/// A Nexus diff file
 /// </summary>
 public class DiffEntry
 {

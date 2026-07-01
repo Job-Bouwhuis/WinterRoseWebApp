@@ -1,22 +1,16 @@
 ﻿@inherits LayoutComponentBase
+@using WinterRose.Nexus.Registry.Features.Components
 
-<div class="nexus-account-shell">
+<PageContainer>
+    <PageHeader Title="Manage your account" Subtitle="Change your account settings" />
 
-    <header class="nexus-page-header">
-        <div class="nexus-text-title">Manage your account</div>
-        <div class="nexus-text-subtitle">Change your account settings</div>
-    </header>
-
-    <div class="nexus-account-grid">
-
-        <aside class="nexus-panel nexus-account-sidebar">
+    <div class="manage-layout">
+        <nav class="manage-sidebar">
             <ManageNavMenu />
-        </aside>
+        </nav>
 
-        <main class="nexus-panel nexus-account-content">
+        <div class="manage-content">
             @Body
-        </main>
-
+        </div>
     </div>
-
-</div>
+</PageContainer>

@@ -1,0 +1,56 @@
+.external-login-empty {
+    padding: var(--nx-spacing-lg);
+    background: var(--nx-bg-card);
+    border: 1px solid var(--nx-border-soft);
+    border-radius: var(--nx-radius-md);
+    text-align: center;
+}
+
+.external-login-empty p {
+    color: var(--nx-text-muted);
+    margin-bottom: var(--nx-spacing-md);
+}
+
+.external-login-empty a {
+    color: var(--nx-accent-dim);
+    text-decoration: none;
+}
+
+.external-login-empty a:hover {
+    color: var(--nx-accent);
+    text-decoration: underline;
+}
+
+.external-login-form {
+    width: 100%;
+}
+
+.external-login-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--nx-spacing-md);
+}
+
+.external-login-btn {
+    padding: var(--nx-spacing-md) var(--nx-spacing-lg);
+    background: var(--nx-bg-card);
+    border: 1px solid var(--nx-border-soft);
+    border-radius: var(--nx-radius-md);
+    color: var(--nx-text);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        background-color var(--nx-transition-base),
+        border-color var(--nx-transition-base),
+        color var(--nx-transition-base);
+}
+
+.external-login-btn:hover {
+    background-color: var(--nx-bg-elevated);
+    border-color: var(--nx-accent-dim);
+    color: var(--nx-accent-dim);
+}
+
+.external-login-btn:active {
+    background-color: rgba(201, 142, 209, 0.1);
+}

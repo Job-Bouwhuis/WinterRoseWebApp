@@ -3,6 +3,7 @@
     <Project Path="ClientHub/WinterRose.Nexus/WinterRose.Nexus.csproj" Id="4ce63e2d-8e73-4ede-9c13-b3b777de9b9d" />
     <Project Path="EttoFormsTests/EttoFormsTests.csproj" />
     <Project Path="WinterRose.Nexus.Registry/WinterRose.Nexus.Registry.csproj" />
+    <Project Path="WinterRose.Nexus.SDK/WinterRose.Nexus.SDK.csproj" />
     <Project Path="WinterRose.Nexus.Shared/WinterRose.Nexus.Shared.csproj" Id="76d36d3d-298c-4a50-ba69-436d0de5aa57" />
   </Folder>
   <Folder Name="/Diffing/">

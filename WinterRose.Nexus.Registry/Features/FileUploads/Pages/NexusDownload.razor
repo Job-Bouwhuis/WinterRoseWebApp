@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="css/NexusDownload.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-@* <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" /> *@
 
 <div class="nexus-page">
 
@@ -15,12 +14,12 @@
     <section class="hero">
 
         <div class="hero-copy">
-            <span class="eyebrow">Application distribution for indie devs</span>
-            <h1 class="hero-title">Get your build<br />onto their machine.<br /><span class="accent-text">Fast.</span></h1>
+            <span class="eyebrow">The easiest way to stay up to date</span>
+            <h1 class="hero-title">Get the app.<br />Get the updates.<br /><span class="accent-text">Automatically.</span></h1>
             <p class="hero-sub">
-                Nexus is a lightweight distribution layer built for small teams and solo developers.
-                It shortens the gap between "I changed the code" and "the tester is running it"
-                and stays useful long after testing is done, as a real way to ship your app or game to players.
+                Nexus is a lightweight client that keeps the apps and games you've been invited to test
+                up to date on your machine. Install it once, and new builds show up the moment they're
+                released, no re-downloading the whole thing every time.
             </p>
         </div>
 
@@ -38,12 +37,12 @@
 
                 <g class="node node-dev">
                     <rect x="16" y="46" width="64" height="48" rx="10" class="node-box" />
-                    <text x="48" y="74" text-anchor="middle" class="node-label">DEV</text>
+                    <text x="48" y="74" text-anchor="middle" class="node-label">NEW</text>
                 </g>
 
                 <g class="node node-tester">
                     <rect x="240" y="46" width="64" height="48" rx="10" class="node-box" />
-                    <text x="272" y="74" text-anchor="middle" class="node-label">USER</text>
+                    <text x="272" y="74" text-anchor="middle" class="node-label">YOU</text>
                 </g>
 
                 <circle r="4" class="packet" cx="48" cy="70">
@@ -52,7 +51,7 @@
                     <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.85;1" dur="2.6s" repeatCount="indefinite" />
                 </circle>
             </svg>
-            <span class="diagram-caption">delta update, in transit</span>
+            <span class="diagram-caption">update on its way</span>
         </div>
     </section>
 
@@ -112,34 +111,34 @@
     <section class="explainer">
 
         <div class="explainer-item">
-            <h3>Close the testing loop</h3>
+            <h3>One install, every build</h3>
             <p>
-                Push a build and your tester gets it without you walking a drive over or fighting cloud-storage
-                links. When dev and tester aren't the same machine, that gap is where momentum dies, Nexus
-                keeps it short.
+                Once Nexus is installed, it's how you'll get access to the apps and games you're testing.
+                No more hunting for the latest link or wondering if you're on an old version, open Nexus
+                and it's there.
             </p>
         </div>
 
         <div class="explainer-item">
-            <h3>Download only what changed</h3>
+            <h3>Updates without the wait</h3>
             <p>
-                Updates ship as the difference between versions, not the whole app again. Smaller pushes,
-                faster installs, less waiting around for a build that's 95% identical to the last one.
+                New versions download as just the changes, not the whole app from scratch. That means
+                smaller downloads and less time watching a progress bar before you can jump back in.
             </p>
         </div>
 
         <div class="explainer-item">
-            <h3>Let the app update itself while running</h3>
+            <h3>Updates while you play</h3>
             <p>
-                Opt in, and your app can ask Nexus if a new version exists, then hand off to the Nexus client to
-                fetch it and relaunch. A pre-built library handles the wiring, nothing happens unless you turn it on.
+                Some apps can check for new versions on their own and hand off to Nexus to grab the update
+                and relaunch, no need to close what you're doing and go looking for it yourself.
             </p>
         </div>
 
     </section>
 
     <footer class="page-footer">
-        <span>Nexus is built for small teams who'd rather ship than babysit distribution.</span>
+        <span>Nexus keeps you on the latest build, so you can spend your time using the app, not chasing updates.</span>
         <NavLink class="nx-link-btn" @onclick="MoreInfoClicked">More about Nexus</NavLink>
     </footer>
 

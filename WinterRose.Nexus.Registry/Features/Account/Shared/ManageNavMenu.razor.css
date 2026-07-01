@@ -1,0 +1,26 @@
+.manage-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.manage-nav-link {
+    padding: var(--nx-spacing-md) var(--nx-spacing-lg);
+    color: var(--nx-text);
+    text-decoration: none;
+    transition: background-color var(--nx-transition-base), color var(--nx-transition-base);
+    border-left: 3px solid transparent;
+    font-size: 0.95rem;
+}
+
+.manage-nav-link:hover {
+    background-color: rgba(201, 142, 209, 0.1);
+    color: var(--nx-accent-dim);
+}
+
+.manage-nav-link.active {
+    background-color: rgba(201, 142, 209, 0.15);
+    color: var(--nx-accent);
+    border-left-color: var(--nx-accent);
+    font-weight: 500;
+}

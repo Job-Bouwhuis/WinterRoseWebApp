@@ -1,0 +1,112 @@
+.upload-drop-zone {
+    border: 2px dashed var(--nx-border);
+    border-radius: var(--nx-radius-lg);
+    padding: 3rem var(--nx-spacing-lg);
+    text-align: center;
+    cursor: pointer;
+    transition: 
+        border-color var(--nx-transition-base),
+        background-color var(--nx-transition-base);
+}
+
+.version-number {
+    width: 4.5rem;
+}
+
+.version-suffix {
+    width: 12rem;
+}
+
+.version-editor {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.version-number {
+    max-width: 5rem;
+}
+
+.version-suffix {
+    max-width: 12rem;
+}
+
+.version-separator {
+    font-weight: 600;
+}
+
+.upload-drop-zone:hover {
+    border-color: var(--nx-accent-dim);
+    background-color: rgba(201, 142, 209, 0.05);
+}
+
+.upload-drop-icon {
+    color: var(--nx-accent-dim);
+    font-size: 3rem;
+    margin-bottom: var(--nx-spacing-md);
+}
+
+.upload-drop-icon svg {
+    width: 3rem;
+    height: 3rem;
+    display: inline-block;
+}
+
+.upload-drop-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--nx-text);
+    margin: 0 0 var(--nx-spacing-sm);
+}
+
+.upload-status {
+    display: flex;
+    align-items: center;
+    gap: var(--nx-spacing-md);
+    padding: var(--nx-spacing-md);
+    background: var(--nx-bg-card);
+    border: 1px solid var(--nx-border-soft);
+    border-radius: var(--nx-radius-md);
+}
+
+.form-section-title {
+    font-size: 1.1rem;
+    margin-bottom: var(--nx-spacing-md);
+}
+
+.version-input-group {
+    display: flex;
+    align-items: center;
+    gap: var(--nx-spacing-sm);
+    flex-wrap: wrap;
+}
+
+.version-input-group :deep(.nx-input-group) {
+    flex: 0 0 auto;
+    min-width: 5rem;
+}
+
+.version-input-group :deep(.nx-input-group:last-child) {
+    min-width: 8rem;
+}
+
+.version-separator {
+    color: var(--nx-text-muted);
+    font-weight: 500;
+}
+
+.button-group {
+    display: flex;
+    gap: var(--nx-spacing-md);
+    margin-top: var(--nx-spacing-2xl);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nx-spacing-lg);
+}
+
+.form-group + .form-group {
+    margin-top: var(--nx-spacing-lg);
+}

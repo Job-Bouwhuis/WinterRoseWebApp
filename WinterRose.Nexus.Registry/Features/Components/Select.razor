@@ -1,0 +1,92 @@
+@{
+    var selectId = Id ?? Guid.NewGuid().ToString();
+}
+
+<div class="nx-select-group">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label for="@selectId" class="nx-select-label">
+            @Label
+            @if (Required)
+            {
+                <span class="nx-select-required" aria-label="required">*</span>
+            }
+        </label>
+    }
+
+    <select 
+        id="@selectId"
+        class="nx-select @SelectClass"
+        @bind="Value"
+        @bind:after="OnValueChanged"
+        disabled="@Disabled"
+        required="@Required">
+        @if (!string.IsNullOrWhiteSpace(Placeholder))
+        {
+            <option value="" disabled selected>@Placeholder</option>
+        }
+        @foreach (var option in Options ?? new List<SelectOption>())
+        {
+            <option value="@option.Value">@option.Label</option>
+        }
+    </select>
+
+    @if (!string.IsNullOrWhiteSpace(HelperText))
+    {
+        <small class="nx-select-helper">@HelperText</small>
+    }
+
+    @if (ShowValidation && !string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <span class="nx-select-error">@ErrorMessage</span>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter]
+    public string? Label { get; set; }
+
+    [Parameter]
+    public string? Placeholder { get; set; }
+
+    [Parameter]
+    public string? HelperText { get; set; }
+
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> ValueChanged { get; set; }
+
+    [Parameter]
+    public List<SelectOption>? Options { get; set; }
+
+    [Parameter]
+    public string? SelectClass { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public bool Required { get; set; }
+
+    [Parameter]
+    public bool ShowValidation { get; set; }
+
+    private async Task OnValueChanged()
+    {
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    public class SelectOption
+    {
+        public string Value { get; set; } = "";
+        public string Label { get; set; } = "";
+    }
+}

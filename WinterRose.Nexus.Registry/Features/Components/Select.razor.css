@@ -1,0 +1,86 @@
+.nx-select-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nx-spacing-sm);
+    width: 100%;
+}
+
+.nx-select-label {
+    font-family: var(--nx-font-body);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--nx-text);
+    display: flex;
+    align-items: center;
+    gap: var(--nx-spacing-xs);
+}
+
+.nx-select-required {
+    color: var(--nx-accent);
+}
+
+.nx-select {
+    height: var(--nx-input-height);
+    padding: 0.6rem 1rem;
+
+    background: var(--nx-bg-card);
+    border: 1px solid var(--nx-border-soft);
+    border-radius: var(--nx-radius-md);
+
+    font-family: var(--nx-font-body);
+    font-size: 0.95rem;
+    color: var(--nx-text);
+
+    cursor: pointer;
+
+    transition:
+        background-color var(--nx-transition-base),
+        border-color var(--nx-transition-base),
+        box-shadow var(--nx-transition-base);
+
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b8a8c0' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.2em;
+    padding-right: 2.5rem;
+}
+
+.nx-select option {
+    background: var(--nx-bg-card);
+    color: var(--nx-text);
+}
+
+.nx-select option:disabled {
+    color: var(--nx-text-muted);
+}
+
+.nx-select:focus {
+    outline: none;
+    border-color: var(--nx-accent-dim);
+    background-color: var(--nx-bg-elevated);
+    box-shadow: 0 0 0 2px rgba(252, 173, 255, 0.1);
+}
+
+.nx-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--nx-bg);
+}
+
+.nx-select:invalid:not([value=""]) {
+    border-color: #ff4444;
+}
+
+.nx-select-helper {
+    font-size: 0.8rem;
+    color: var(--nx-text-muted);
+    font-family: var(--nx-font-body);
+}
+
+.nx-select-error {
+    font-size: 0.8rem;
+    color: #ff6b6b;
+    font-family: var(--nx-font-body);
+    font-weight: 500;
+}

@@ -263,7 +263,7 @@ public class ApplicationStoreWindow : WindowBase
             }
 
             selectedApp = app;
-            appTitle.Text = app.Name;
+            appTitle.Text = app.AppId;
 
             PopulateBranches();
             PopulateVersions();
@@ -290,7 +290,7 @@ public class ApplicationStoreWindow : WindowBase
         }
 
         selectedApp = apps[index];
-        appTitle.Text = selectedApp.Name;
+        appTitle.Text = selectedApp.AppId;
 
         PopulateBranches();
         PopulateVersions();
@@ -362,13 +362,13 @@ public class ApplicationStoreWindow : WindowBase
 
             if (action is "Update" or "Migrate")
             {
-                LocalAppEntry installed = GetInstalledApp(selectedApp.Name)!;
+                LocalAppEntry installed = GetInstalledApp(selectedApp.AppId)!;
                 await installer.PatchApplicationAsync(installed.Name, installed.Version, selectedAppVersion, progress);
             }
             else
             {
                 // "Install" or "Re-Install" — full archive
-                await installer.InstallFromArchiveAsync(selectedApp.Name, selectedAppVersion, progress);
+                await installer.InstallFromArchiveAsync(selectedApp.AppId, selectedAppVersion, progress);
             }
 
             RefreshInstalledApps();
@@ -388,7 +388,7 @@ public class ApplicationStoreWindow : WindowBase
 
         foreach (AppEntry app in apps)
         {
-            appList.Items.Add(app.Name);
+            appList.Items.Add(app.DisplayName);
         }
     }
 
@@ -458,7 +458,7 @@ public class ApplicationStoreWindow : WindowBase
         if (selectedApp == null)
             return "Install";
 
-        var installed = GetInstalledApp(selectedApp.Name);
+        var installed = GetInstalledApp(selectedApp.AppId);
 
         if (installed == null)
             return "Install";

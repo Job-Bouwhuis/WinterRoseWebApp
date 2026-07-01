@@ -1,38 +1,29 @@
-﻿@page "/Account/AccessDenied"
+@page "/Account/AccessDenied"
+@using WinterRose.Nexus.Registry.Features.Components
 
 <PageTitle>Access denied</PageTitle>
 
-<div class="nexus-auth-card nexus-access-denied">
-    <div class="nexus-access-icon">
-        <div class="nexus-lock-pulse">
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
-                <path d="M7 10V8a5 5 0 0110 0v2"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"/>
+<PageContainer>
+    <Card>
+        <div class="access-denied-container">
+            <div class="access-denied-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M7 10V8a5 5 0 0110 0v2" stroke-linecap="round"/>
+                    <path d="M6 10h12v10H6V10z" stroke-linejoin="round"/>
+                    <path d="M12 14v2" stroke-linecap="round"/>
+                </svg>
+            </div>
 
-                <path d="M6 10h12v10H6V10z"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linejoin="round"/>
+            <h1 class="access-denied-title">Access Denied</h1>
 
-                <path d="M12 14v2"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"/>
-            </svg>
+            <p class="access-denied-message">
+                You don't have permission to access this page. If you think this is a mistake, please contact support or try logging in with a different account.
+            </p>
+
+            <div class="access-denied-actions">
+                <a href="/" class="nx-link-button">Return to home</a>
+                <a href="/Account/Login" class="nx-link-button">Log in with another account</a>
+            </div>
         </div>
-    </div>
-
-    <h1 class="nexus-auth-title">Access denied</h1>
-
-    <p class="nexus-text-muted">
-        You don’t have permission to open this page. If you think this is a mistake, double-check your account or contact support.
-    </p>
-
-    <div class="nexus-access-actions">
-        <a class="nexus-btn nexus-btn-external" href="/">
-            Go back home
-        </a>
-    </div>
-</div>
+    </Card>
+</PageContainer>

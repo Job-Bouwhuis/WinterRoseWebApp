@@ -1,48 +1,38 @@
 ﻿@using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using WinterRose.Nexus.Registry.Data
+@using WinterRose.Nexus.Registry.Features.Components
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
 
 @if (externalLogins.Length == 0)
 {
-    <div class="nexus-card nexus-card--center nexus-text-empty">
-        <p class="nexus-text-muted">
-            No external authentication providers are configured.
-        </p>
-
-        <a class="nexus-link"
-           href="https://go.microsoft.com/fwlink/?LinkID=532715"
-           target="_blank">
+    <div class="external-login-empty">
+        <p>No external authentication providers are configured.</p>
+        <a href="https://go.microsoft.com/fwlink/?LinkID=532715" target="_blank">
             Setup guide for external login providers
         </a>
     </div>
 }
 else
 {
-    <div class="nexus-card nexus-card--center">
-        <form action="Account/PerformExternalLogin" method="post">
-            <AntiforgeryToken />
-            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+    <form action="Account/PerformExternalLogin" method="post" class="external-login-form">
+        <AntiforgeryToken />
+        <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
 
-            <div class="nexus-text-title">
-                Continue with external provider
-            </div>
-
-            <div class="nexus-stack">
-                @foreach (var provider in externalLogins)
-                {
-                    <button type="submit"
-                            class="nexus-btn nexus-btn--outline"
-                            name="provider"
-                            value="@provider.Name">
-                        @provider.DisplayName
-                    </button>
-                }
-            </div>
-        </form>
-    </div>
+        <div class="external-login-grid">
+            @foreach (var provider in externalLogins)
+            {
+                <button type="submit"
+                        class="external-login-btn"
+                        name="provider"
+                        value="@provider.Name">
+                    @provider.DisplayName
+                </button>
+            }
+        </div>
+    </form>
 }
 
 @code {

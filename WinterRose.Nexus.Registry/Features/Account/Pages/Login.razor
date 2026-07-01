@@ -14,77 +14,71 @@
 
 <PageTitle>Log in</PageTitle>
 
-<div class="nexus-auth-card">
-    <h1 class="nexus-auth-title">Log in</h1>
+<PageContainer>
+    <PageHeader Title="Log in" Subtitle="Use your account to continue" />
 
-    <p class="nexus-text-muted">
-        Use your account to continue.
-    </p>
+    <Card>
+        <StatusMessage Message="@errorMessage" />
 
-    <StatusMessage Message="@errorMessage" />
+        <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
+            <DataAnnotationsValidator />
 
-    <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
-        <DataAnnotationsValidator />
-        <ValidationSummary class="text-danger" role="alert" />
+            <div class="form-group">
+                <TextInput 
+                    Id="Input.Email"
+                    Label="Email"
+                    @bind-Value="Input.Email"
+                    InputType="email"
+                    Placeholder="name@example.com"
+                    Required="true"
+                    ShowValidation="true"
+                    ErrorMessage="@GetValidationError(() => Input.Email)" />
 
-        <div class="nexus-floating mb-3 nexus-input">
-            <InputText @bind-Value="Input.Email"
-                       id="Input.Email"
-                       class="nexus-input"
-                       autocomplete="username webauthn"
-                       aria-required="true"
-                       placeholder=" " />
-            <label for="Input.Email" class="nexus-label">Email</label>
-            <ValidationMessage For="() => Input.Email" class="text-danger" />
-        </div>
+                <TextInput 
+                    Id="Input.Password"
+                    Label="Password"
+                    @bind-Value="Input.Password"
+                    InputType="password"
+                    Required="true"
+                    ShowValidation="true"
+                    ErrorMessage="@GetValidationError(() => Input.Password)" />
 
-        <div class="nexus-floating mb-3 nexus-input">
-            <InputText type="password"
-                       @bind-Value="Input.Password"
-                       id="Input.Password"
-                       class="nexus-input"
-                       autocomplete="current-password"
-                       aria-required="true"
-                       placeholder=" " />
-            <label for="Input.Password" class="nexus-label">Password</label>
-            <ValidationMessage For="() => Input.Password" class="text-danger" />
-        </div>
+                <NexusCheckbox @bind-Value="Input.RememberMe" Label="Remember me" />
+            </div>
 
-        <NexusCheckbox @bind-Value="Input.RememberMe"
-                       Label="Remember me" />
+            <Button Variant="ButtonVariant.Primary" Submit="true" class="w-100">
+                Log in
+            </Button>
+        </EditForm>
 
-        <button type="submit" class="nexus-btn nexus-btn--primary">
-            Log in
-        </button>
-
-        <div class="nexus-access-actions">
-            <span class="nexus-text-muted">or</span>
+        <div class="auth-divider">
+            <span>or</span>
         </div>
 
         <PasskeySubmit Operation="PasskeyOperation.Request"
                         Name="Input.Passkey"
                         EmailName="Input.Email"
-                        class="nexus-btn nexus-btn--link">
+                        class="w-100">
             Log in with a passkey
         </PasskeySubmit>
 
-        <hr />
+        <hr class="my-4" />
 
-        <div class="nexus-access-actions">
-            <a class="nexus-btn nexus-btn--link" href="Account/ForgotPassword">Forgot password</a>
-            <a class="nexus-btn nexus-btn--link" href="@(NavigationManager.GetUriWithQueryParameters("Account/Register",
+        <div class="auth-links">
+            <a class="nx-link" href="Account/ForgotPassword">Forgot password?</a>
+            <a class="nx-link" href="@(NavigationManager.GetUriWithQueryParameters("Account/Register",
                 new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">
                 Create account
             </a>
-            <a class="nexus-btn nexus-btn--link" href="Account/ResendEmailConfirmation">Resend confirmation</a>
+            <a class="nx-link" href="Account/ResendEmailConfirmation">Resend confirmation</a>
         </div>
-    </EditForm>
+    </Card>
 
-    <hr />
-
-    <h3 class="nexus-auth-subtitle">External login</h3>
-    <ExternalLoginPicker />
-</div>
+    <Card>
+        <h3 class="mb-3">External login</h3>
+        <ExternalLoginPicker />
+    </Card>
+</PageContainer>
 
 @code {
     private string? errorMessage;
@@ -159,6 +153,27 @@
         {
             errorMessage = "Error: Invalid login attempt.";
         }
+    }
+
+    private string? GetValidationError<TValue>(System.Linq.Expressions.Expression<Func<TValue>> accessor)
+    {
+        try
+        {
+            if (editContext != null && editContext.IsModified())
+            {
+                var fieldName = GetFieldName(accessor);
+                var field = editContext.Field(fieldName);
+                return editContext.GetValidationMessages(field).FirstOrDefault();
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    private string GetFieldName<TValue>(System.Linq.Expressions.Expression<Func<TValue>> accessor)
+    {
+        var expression = (System.Linq.Expressions.MemberExpression)accessor.Body;
+        return expression.Member.Name;
     }
 
     private sealed class InputModel

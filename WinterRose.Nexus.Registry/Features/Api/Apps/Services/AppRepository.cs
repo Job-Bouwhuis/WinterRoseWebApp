@@ -25,6 +25,7 @@ public partial class AppRepository
         string versionRoot = Path.Combine(
             uploadsFolder.FullName,
             appName,
+            "versions",
             appVersion.ToString(VersionStringFormat.FolderSafe));
 
         if (!Directory.Exists(versionRoot))
@@ -51,6 +52,7 @@ public partial class AppRepository
         string versionRoot = Path.Combine(
             uploadsFolder.FullName,
             appName,
+            "versions",
             appVersion.ToString(VersionStringFormat.FolderSafe));
 
         if (!Directory.Exists(versionRoot))
@@ -88,6 +90,15 @@ public partial class AppRepository
         return output;
     }
 
+    public async Task<Stream> OpenDiff(
+        string appName,
+        AppVersion fromVersion,
+        AppVersion toVersion
+    )
+    {
+        return await appDiffService.OpenDiffStreamAsync(appName, fromVersion, toVersion);
+    }
+
 
     public async Task<List<AppEntry>> GetAppEntries()
     {
@@ -120,8 +131,9 @@ public partial class AppRepository
     private string GetLatestVersionFromAppPath(string appPath)
     {
         AppVersion? latest = null;
+        string versionsRoot = Path.Combine(appPath, "versions");
 
-        foreach (var subDir in Directory.EnumerateDirectories(appPath))
+        foreach (var subDir in Directory.EnumerateDirectories(versionsRoot))
         {
             var folderName = Path.GetFileName(subDir);
 
@@ -156,55 +168,57 @@ public partial class AppRepository
         var versions = new List<AppVersion>();
         var diffs = new List<DiffEntry>();
 
-        foreach (var subDir in Directory.EnumerateDirectories(appPath))
+        string versionsRoot = Path.Combine(appPath, "versions");
+
+        if (Directory.Exists(versionsRoot))
         {
-            var folderName = Path.GetFileName(subDir);
-
-            if (folderName.Equals("latest", StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            if (folderName.Equals("diffs", StringComparison.OrdinalIgnoreCase))
+            foreach (var versionDir in Directory.EnumerateDirectories(versionsRoot))
             {
-                foreach (var diffFile in Directory.EnumerateFiles(subDir))
+                var folderName = Path.GetFileName(versionDir);
+
+                AppVersion appVersion;
+
+                try
                 {
-                    var fileName = Path.GetFileName(diffFile);
-                    var toIndex = fileName.IndexOf("_TO_", StringComparison.OrdinalIgnoreCase);
-                    if (toIndex < 0) continue;
-
-                    var from = fileName[..toIndex];
-                    var to = fileName[(toIndex + 4)..];
-
-                    diffs.Add(new DiffEntry
-                    {
-                        FromVersion = from,
-                        ToVersion = to,
-                        FilePath = diffFile,
-                        FileName = fileName,
-                    });
+                    appVersion = new AppVersion(folderName);
+                }
+                catch
+                {
+                    continue;
                 }
 
-                continue;
-            }
+                versions.Add(appVersion);
 
-            AppVersion appVersion;
+                string diffDir = Path.Combine(versionDir, "diffs");
 
-            try
-            {
-                appVersion = new AppVersion(folderName);
-            }
-            catch
-            {
-                continue;
-            }
+                if (Directory.Exists(diffDir))
+                {
+                    foreach (var diffFile in Directory.EnumerateFiles(diffDir))
+                    {
+                        var fileName = Path.GetFileName(diffFile);
+                        var toIndex = fileName.IndexOf("_TO_", StringComparison.OrdinalIgnoreCase);
+                        if (toIndex < 0) continue;
 
-            versions.Add(appVersion);
+                        var from = fileName[..toIndex];
+                        var to = fileName[(toIndex + 4)..];
+
+                        diffs.Add(new DiffEntry
+                        {
+                            FromVersion = from,
+                            ToVersion = to,
+                            FilePath = diffFile,
+                            FileName = fileName,
+                        });
+                    }
+                }
+            }
         }
 
         versions.Sort((a, b) => a.CompareTo(b));
 
         return new AppEntry
         {
-            Name = uploadName,
+            AppId = uploadName,
             Versions = versions,
             Diffs = diffs,
         };

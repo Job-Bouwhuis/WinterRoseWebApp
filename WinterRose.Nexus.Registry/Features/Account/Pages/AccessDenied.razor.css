@@ -1,0 +1,60 @@
+.access-denied-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--nx-spacing-xl);
+    padding: var(--nx-spacing-2xl) var(--nx-spacing-lg);
+    text-align: center;
+}
+
+.access-denied-icon {
+    width: 4rem;
+    height: 4rem;
+    color: var(--nx-accent);
+    opacity: 0.8;
+}
+
+.access-denied-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.access-denied-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--nx-text);
+    margin: 0;
+}
+
+.access-denied-message {
+    font-size: 1rem;
+    color: var(--nx-text-muted);
+    margin: 0;
+    max-width: 500px;
+    line-height: 1.6;
+}
+
+.access-denied-actions {
+    display: flex;
+    gap: var(--nx-spacing-md);
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: var(--nx-spacing-lg);
+}
+
+.nx-link-button {
+    padding: var(--nx-spacing-md) var(--nx-spacing-lg);
+    background: var(--nx-bg-card);
+    border: 1px solid var(--nx-border-soft);
+    border-radius: var(--nx-radius-md);
+    color: var(--nx-accent-dim);
+    text-decoration: none;
+    transition: all var(--nx-transition-base);
+    font-weight: 500;
+}
+
+.nx-link-button:hover {
+    background: var(--nx-bg-elevated);
+    border-color: var(--nx-accent-dim);
+    color: var(--nx-accent);
+}

@@ -1,0 +1,17 @@
+.counter-demo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nx-spacing-md);
+    align-items: flex-start;
+}
+
+.counter-status {
+    font-size: 1.1rem;
+    margin: 0;
+    color: var(--nx-text);
+}
+
+.counter-status strong {
+    color: var(--nx-accent);
+    font-weight: 700;
+}

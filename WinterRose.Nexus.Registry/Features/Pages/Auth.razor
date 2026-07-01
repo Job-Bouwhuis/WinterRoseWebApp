@@ -1,13 +1,17 @@
 ﻿@page "/auth"
 
 @using Microsoft.AspNetCore.Authorization
+@using WinterRose.Nexus.Registry.Features.Components
 
 @attribute [Authorize]
 
-<PageTitle>Auth</PageTitle>
+<PageContainer>
+    <PageHeader Title="You are authenticated" Subtitle="Welcome back!" />
 
-<h1>You are authenticated</h1>
-
-<AuthorizeView>
-    Hello @context.User.Identity?.Name!
-</AuthorizeView>
+    <Card>
+        <AuthorizeView>
+            <p class="auth-greeting">Hello <strong>@context.User.Identity?.Name</strong>!</p>
+            <p class="text-muted">You have successfully logged in to the system.</p>
+        </AuthorizeView>
+    </Card>
+</PageContainer>

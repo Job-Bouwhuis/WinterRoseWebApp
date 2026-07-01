@@ -5,37 +5,25 @@ using WinterRose.Nexus.Shared;
 
 namespace WinterRose.Nexus.Registry.Features.FileUploads.Services;
 
-public sealed class DiffCreatorService(AppDiffService diffService, UploadQueue queue, ILogger<DiffCreatorService> logger)
+public sealed class DiffCreatorService(
+    AppDiffService diffService,
+    IAsyncQueue<UploadCompletedEvent> queue,
+    ILogger<DiffCreatorService> logger)
     : BackgroundService
 {
-    private static string UploadsFolderPath = "Uploads";
-    
-    private DirectoryDiffEngine directoryDiffer = new();
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        try
+        await queue.SubscribeAsync(async (@event, ct) =>
         {
-            await foreach (var ev in queue.Reader.ReadAllAsync(stoppingToken))
+            try
             {
-                try
-                {
-                    await HandleAsync(ev, stoppingToken);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed processing upload event for {Name}", ev.Name);
-                }
+                await HandleAsync(@event, ct);
             }
-        }
-        catch (OperationCanceledException)
-        {
-            logger.LogInformation("DiffCreatorService is stopping due to cancellation.");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "An unexpected error occurred in DiffCreatorService.");
-        }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed processing upload event for {Name}", @event.Name);
+            }
+        }, stoppingToken);
     }
 
     private async Task HandleAsync(UploadCompletedEvent ev, CancellationToken ct)
@@ -96,9 +84,8 @@ public sealed class DiffCreatorService(AppDiffService diffService, UploadQueue q
 
         logger.LogInformation("Diff ready for {App}", ev.Name);
     }
-    
-    
-    
+
+
     private AppVersion? ParseVersionEntry(string folderName)
     {
         try

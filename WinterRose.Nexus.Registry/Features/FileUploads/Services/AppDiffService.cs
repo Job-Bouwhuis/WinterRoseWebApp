@@ -20,9 +20,7 @@ public sealed class AppDiffService
         DirectoryInfo from,
         DirectoryInfo to)
     {
-        var diffRoot = GetDiffRoot(appName);
-
-        string diffPath = BuildDiffPath(diffRoot, from, to);
+        string diffPath = BuildDiffPath(from, to);
 
         if (File.Exists(diffPath))
             return diffPath;
@@ -35,11 +33,11 @@ public sealed class AppDiffService
 
         return diffPath;
     }
-
-    private DirectoryInfo GetDiffRoot(string appName)
+    
+    private DirectoryInfo GetVersionsRoot(string appName)
     {
-        var root = Path.Combine(basePath.Name, appName, "Diffs");
-        return Directory.CreateDirectory(root);
+        var root = Path.Combine(basePath.FullName, appName, "versions");
+        return new DirectoryInfo(root);
     }
 
     public async Task<Stream> OpenDiffStreamAsync(
@@ -47,7 +45,7 @@ public sealed class AppDiffService
         AppVersion from,
         AppVersion to)
     {
-        var appRoot = Path.Combine(basePath.Name, appName);
+        var appRoot = Path.Combine(basePath.FullName, appName, "versions");
 
         var fromDir = new DirectoryInfo(
             Path.Combine(appRoot, from.ToString(VersionStringFormat.FolderSafe)));
@@ -61,13 +59,10 @@ public sealed class AppDiffService
         if (!toDir.Exists)
             throw new DirectoryNotFoundException($"To version not found: {to}");
 
-        var diffRoot = new DirectoryInfo(Path.Combine(appRoot, "Diffs"));
-
         string diffPath = await CreateDiffAsyncInternal(
             appName,
             fromDir,
-            toDir,
-            diffRoot);
+            toDir);
 
         return new FileStream(
             diffPath,
@@ -81,36 +76,33 @@ public sealed class AppDiffService
     private async Task<string> CreateDiffAsyncInternal(
         string appName,
         DirectoryInfo from,
-        DirectoryInfo to,
-        DirectoryInfo diffRoot)
+        DirectoryInfo to)
     {
-        var fromDir = diffRoot.CreateSubdirectory(from.Name);
+        var diffPath = BuildDiffPath(from, to);
 
-        string fileName = $"{to.Name}.wfdiff";
-        string fullPath = Path.Combine(fromDir.FullName, fileName);
-
-        if (File.Exists(fullPath))
-            return fullPath;
+        if (File.Exists(diffPath))
+            return diffPath;
 
         logger.LogInformation(
             "Creating on-demand diff {App}: {From} -> {To}",
             appName, from.Name, to.Name);
 
         var diff = await directoryDiffer.DiffAsync(from, to);
-        diff.Save(fullPath);
+        diff.Save(diffPath);
 
-        return fullPath;
+        return diffPath;
     }
     
     private string BuildDiffPath(
-        DirectoryInfo diffRoot,
         DirectoryInfo from,
         DirectoryInfo to)
     {
-        var fromDir = diffRoot.CreateSubdirectory(from.Name);
+        var fromDiffDir = Path.Combine(from.FullName, "diffs");
+
+        Directory.CreateDirectory(fromDiffDir);
 
         string fileName = $"{to.Name}.wfdiff";
 
-        return Path.Combine(fromDir.FullName, fileName);
+        return Path.Combine(fromDiffDir, fileName);
     }
 }

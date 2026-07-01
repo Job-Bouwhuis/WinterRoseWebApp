@@ -1,8 +1,9 @@
-﻿@page "/Account/Manage"
-
+@page "/Account/Manage"
+@layout ManageLayout
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
 @using WinterRose.Nexus.Registry.Data
+@using WinterRose.Nexus.Registry.Features.Components
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
@@ -10,68 +11,57 @@
 
 <PageTitle>Profile</PageTitle>
 
-<div class="nexus-card nexus-card--center">
+<PageHeader Title="Profile" Subtitle="Manage your profile information"/>
 
-    <div class="nexus-text-title">Profile</div>
-
-    <StatusMessage />
+<Card>
+    <StatusMessage/>
 
     <EditForm Model="Input"
               FormName="profile"
               OnValidSubmit="OnValidSubmitAsync"
               method="post">
 
-        <DataAnnotationsValidator />
-        <ValidationSummary class="nexus-validation-summary" role="alert" />
+        <DataAnnotationsValidator/>
 
-        <div class="nexus-form">
-
-            <div class="nexus-field">
-                <label class="nexus-label">Username</label>
-
-                <div class="nexus-input nexus-input--readonly">
+        <div class="form-group">
+            <div class="profile-field">
+                <label class="nx-input-label">Username</label>
+                <div class="profile-value">
                     @username
                 </div>
             </div>
 
-            <div class="nexus-field">
-                <label class="nexus-label">Phone number</label>
-
-                <InputText @bind-Value="Input.PhoneNumber"
-                           class="nexus-input"
-                           placeholder="Enter your phone number" />
-
-                <ValidationMessage For="() => Input.PhoneNumber"
-                                   class="nexus-validation" />
-            </div>
-
-            <button type="submit"
-                    class="nexus-btn nexus-btn--primary">
-                Save changes
-            </button>
-
+            <TextInput
+                Label="Phone number"
+                @bind-Value="Input.PhoneNumber"
+                Placeholder="Enter your phone number"
+                ErrorMessage="@GetValidationError(() => Input.PhoneNumber)"
+                ShowValidation="true"/>
         </div>
 
-    </EditForm>
+        <Button Variant="ButtonVariant.Primary" Submit="true">
+            Save changes
+        </Button>
 
-</div>
+    </EditForm>
+</Card>
 
 @code {
-    private ApplicationUser? user;
     private string? username;
     private string? phoneNumber;
+    private EditContext editContext = default!;
 
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
-    [SupplyParameterFromForm]
+    [SupplyParameterFromForm(FormName = "profile")]
     private InputModel Input { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
         Input ??= new();
+        editContext = new EditContext(Input);
 
-        user = await UserManager.GetUserAsync(HttpContext.User);
+        var user = await UserManager.GetUserAsync(HttpContext.User);
         if (user is null)
         {
             RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
@@ -86,6 +76,7 @@
 
     private async Task OnValidSubmitAsync()
     {
+        var user = await UserManager.GetUserAsync(HttpContext.User);
         if (user is null)
         {
             RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
@@ -106,10 +97,35 @@
         RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
     }
 
+    private string? GetValidationError<TValue>(System.Linq.Expressions.Expression<Func<TValue>> accessor)
+    {
+        try
+        {
+            if (editContext != null && editContext.IsModified())
+            {
+                var fieldName = GetFieldName(accessor);
+                var field = editContext.Field(fieldName);
+                return editContext.GetValidationMessages(field).FirstOrDefault();
+            }
+        }
+        catch
+        {
+        }
+
+        return null;
+    }
+
+    private string GetFieldName<TValue>(System.Linq.Expressions.Expression<Func<TValue>> accessor)
+    {
+        var expression = (System.Linq.Expressions.MemberExpression)accessor.Body;
+        return expression.Member.Name;
+    }
+
     private sealed class InputModel
     {
         [Phone]
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
     }
+
 }

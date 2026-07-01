@@ -1,0 +1,11 @@
+<div class="nx-card @CardClass">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? CardClass { get; set; }
+}
