@@ -22,6 +22,7 @@
     <ProjectReference Include="..\ClientHub\Utils\HBOICT_Corp.Problems\WinterRose.Web.Problems.csproj" />
     <ProjectReference Include="..\ClientHub\Utils\HBOICT_Corp.Utils\WinterRose.Web.Utils.csproj" />
     <ProjectReference Include="..\ClientHub\Utils\HBOICT_Corp.Validation\WinterRose.Web.Validation.csproj" />
+    <ProjectReference Include="..\Utils\WinterRose.TaskLock\WinterRose.TaskLock.csproj" />
     <ProjectReference Include="..\WinterRose.Nexus.Shared\WinterRose.Nexus.Shared.csproj" />
     <ProjectReference Include="..\WinterRose.Web.Logging\WinterRose.Web.Logging.csproj" />
   </ItemGroup>

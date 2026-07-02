@@ -28,6 +28,12 @@ public class AppsController : ControllerBase
         var res = await repo.GetAppEntries();
         return Ok(res);
     }
+
+    [HttpGet("{appId}")]
+    public IActionResult GetAppAsync(string appId)
+    {
+        return Ok(repo.GetAppEntry(appId));
+    }
     
     [HttpGet("{appName}/versions/{version}/file")]
     public IActionResult GetVersionFile(

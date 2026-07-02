@@ -4,25 +4,25 @@ namespace WinterRose.Uris;
 
 public sealed class UriQuery
 {
-    private readonly Dictionary<string, string> VALUES = [];
+    private readonly Dictionary<string, string?> values = [];
 
-    public int Count => VALUES.Count;
-    public IReadOnlyList<string> Keys => VALUES.Keys.ToList();
+    public int Count => values.Count;
+    public IReadOnlyList<string> Keys => values.Keys.ToList();
     
-    public string this[string key]
+    public string? this[string key]
     {
-        get => VALUES.TryGetValue(key, out string value) ? value : null;
-        set => VALUES[key] = value;
+        get => values.GetValueOrDefault(key);
+        set => values[key] = value;
     }
 
     public void Set<T>(string key, T value)
     {
-        VALUES[key] = value?.ToString();
+        values[key] = value?.ToString();
     }
 
     public T Get<T>(string key)
     {
-        if (!VALUES.TryGetValue(key, out string value))
+        if (!values.TryGetValue(key, out string value))
             return default;
 
         return (T)Convert.ChangeType(value, typeof(T));
@@ -30,20 +30,20 @@ public sealed class UriQuery
 
     public bool Contains(string key)
     {
-        return VALUES.ContainsKey(key);
+        return values.ContainsKey(key);
     }
 
     public IReadOnlyDictionary<string, string> AsDictionary()
     {
-        return VALUES;
+        return values;
     }
 
     public override string ToString()
     {
-        if (VALUES.Count == 0)
+        if (this.values.Count == 0)
             return "";
         
-        var values = VALUES.Select(kv => $"{kv.Key}={kv.Value}");
+        var values = this.values.Select(kv => $"{kv.Key}={kv.Value}");
         return "?" + string.Join("&", values);
     }
 }

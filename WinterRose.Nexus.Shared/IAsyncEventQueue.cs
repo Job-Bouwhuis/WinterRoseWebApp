@@ -1,6 +1,6 @@
-﻿namespace WinterRose.Nexus.Registry.Features.FileUploads.Services;
+﻿namespace WinterRose.Nexus.Shared;
 
-public interface IAsyncQueue<T>
+public interface IAsyncEventQueue<T>
 {
     IDisposable Subscribe(
         Func<T, Task> handler,

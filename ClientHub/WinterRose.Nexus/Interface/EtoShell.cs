@@ -25,8 +25,8 @@ public class EtoShell
         Eto.GtkSharp.Platform p = new();
         etoApp = new EtoApplication(p);
 
-        if (OperatingSystem.IsWindows())
-            ApplyWindowsDarkTheme();
+        // if (OperatingSystem.IsWindows())
+        //     ApplyWindowsDarkTheme();
     }
 
     public void Shutdown()

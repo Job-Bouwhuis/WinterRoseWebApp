@@ -7,13 +7,13 @@ namespace WinterRose.Nexus.Registry.Features.FileUploads.Services;
 
 public sealed class DiffCreatorService(
     AppDiffService diffService,
-    IAsyncQueue<UploadCompletedEvent> queue,
+    IAsyncEventQueue<UploadCompletedEvent> eventQueue,
     ILogger<DiffCreatorService> logger)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await queue.SubscribeAsync(async (@event, ct) =>
+        await eventQueue.SubscribeAsync(async (@event, ct) =>
         {
             try
             {
@@ -45,14 +45,11 @@ public sealed class DiffCreatorService(
             ? "release"
             : ev.AppVersion.Tag.ToLowerInvariant();
 
-        var versionDirs = baseDir
+        var versionDirs = baseDir.CreateSubdirectory("versions")
             .GetDirectories()
-            .Where(d =>
-                !d.Name.Equals("latest", StringComparison.OrdinalIgnoreCase) &&
-                !d.Name.Equals("diffs", StringComparison.OrdinalIgnoreCase))
             .Select(d => new
             {
-                Directory = d,
+                Directory = new DirectoryInfo(Path.Combine(d.FullName, "files")),
                 Version = ParseVersionEntry(d.Name)
             })
             .Where(x => x.Version is not null)
@@ -77,12 +74,12 @@ public sealed class DiffCreatorService(
 
         logger.LogInformation("Preparing diff: {From} -> {To}", from.Name, to.Name);
 
-        await diffService.GetOrCreateDiffAsync(
+        FileInfo diffFile = await diffService.GetOrCreateDiffAsync(
             ev.Name,
             from,
             to);
 
-        logger.LogInformation("Diff ready for {App}", ev.Name);
+        logger.LogInformation("Diff ready for {App} at {path}", ev.Name, diffFile.FullName);
     }
 
 

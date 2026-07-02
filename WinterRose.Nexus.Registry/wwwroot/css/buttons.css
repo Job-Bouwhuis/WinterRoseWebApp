@@ -1,0 +1,234 @@
+/* ==========================================================
+   BUTTON VARIANTS
+   Extends the base .btn / .btn-primary rules in app.css.
+   Expects ButtonVariant enum values to map to classes as:
+   Primary -> btn-primary, Secondary -> btn-secondary,
+   Outline -> btn-outline, Link -> btn-link, Ghost -> btn-ghost,
+   Danger -> btn-danger, Success -> btn-success, Warning -> btn-warning
+   ========================================================== */
+button,
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    height: var(--nx-button-height);
+    padding: 0 var(--nx-button-padding-x);
+    border-radius: var(--nx-radius-md);
+    font-family: var(--nx-font-body);
+    font-weight: 500;
+    font-size: 0.95rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: all var(--nx-transition-base);
+    white-space: nowrap;
+}
+
+.btn:disabled,
+.btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ===== PRIMARY ===== */
+/* (kept here for reference; canonical rule lives in app.css) */
+.btn-primary {
+    color: #1c0521;
+    background-color: var(--nx-accent);
+    border: 1px solid var(--nx-accent);
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background-color: #ffc2ff;
+    border-color: #ffc2ff;
+    color: #1c0521;
+}
+
+.btn-primary:active {
+    background-color: var(--nx-accent-dim);
+    border-color: var(--nx-accent-dim);
+}
+
+/* ===== SECONDARY ===== */
+/* Solid, but low-key -- the "second most important action on the screen" button. */
+.btn-secondary {
+    color: var(--nx-text);
+    background-color: var(--nx-bg-elevated);
+    border: 1px solid var(--nx-border);
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background-color: var(--nx-bg-card);
+    border-color: var(--nx-border-soft);
+}
+
+.btn-secondary:active {
+    background-color: var(--nx-bg);
+}
+
+/* ===== OUTLINE ===== */
+/* Transparent fill, accent border/text. For actions that need to stand out
+   without competing visually with Primary. */
+.btn-outline {
+    color: var(--nx-accent);
+    background-color: transparent;
+    border: 1px solid var(--nx-accent-dim);
+    font-weight: 500;
+}
+
+.btn-outline:hover {
+    background-color: rgba(252, 173, 255, 0.1);
+    border-color: var(--nx-accent);
+    color: var(--nx-accent);
+}
+
+.btn-outline:active {
+    background-color: rgba(252, 173, 255, 0.18);
+}
+
+/* ===== LINK ===== */
+/* No button chrome at all -- reads as inline text. */
+.btn-link {
+    color: var(--nx-accent);
+    background-color: transparent;
+    border: 1px solid transparent;
+    font-weight: 500;
+    padding: 0;
+    height: auto;
+    text-decoration: none;
+}
+
+.btn-link:hover {
+    color: var(--nx-accent-dim);
+    text-decoration: underline;
+}
+
+/* ===== GHOST ===== */
+/* No border, no fill until interacted with. For low-emphasis actions
+   sitting inside cards/tables (e.g. row-level "Download"). */
+.btn-ghost {
+    color: var(--nx-text-muted);
+    background-color: transparent;
+    border: 1px solid transparent;
+    font-weight: 500;
+}
+
+.btn-ghost:hover {
+    background-color: var(--nx-bg-card);
+    color: var(--nx-text);
+}
+
+.btn-ghost:active {
+    background-color: var(--nx-bg-elevated);
+}
+
+/* ===== DANGER ===== */
+/* Destructive actions -- delete, revoke, remove. */
+.btn-danger {
+    color: var(--nx-danger-text);
+    background-color: var(--nx-danger-soft);
+    border: 1px solid var(--nx-danger-border);
+    font-weight: 600;
+}
+
+.btn-danger:hover {
+    background-color: rgba(255, 90, 106, 0.25);
+    border-color: var(--nx-danger);
+    color: #ffffff;
+}
+
+.btn-danger:active {
+    background-color: rgba(255, 90, 106, 0.35);
+}
+
+/* Solid variant, for the single confirm button in a delete dialog where
+   the destructive action should read as the primary action of that dialog. */
+.btn-danger-solid {
+    color: #ffffff;
+    background-color: var(--nx-danger);
+    border: 1px solid var(--nx-danger);
+    font-weight: 600;
+}
+
+.btn-danger-solid:hover {
+    background-color: #ff7482;
+    border-color: #ff7482;
+}
+
+/* ===== SUCCESS ===== */
+/* Confirm / publish / approve actions. */
+.btn-success {
+    color: #0f2b18;
+    background-color: #26b050;
+    border: 1px solid #26b050;
+    font-weight: 600;
+}
+
+.btn-success:hover {
+    background-color: #2fcf5e;
+    border-color: #2fcf5e;
+}
+
+.btn-success:active {
+    background-color: #1f9b45;
+    border-color: #1f9b45;
+}
+
+/* ===== WARNING ===== */
+/* Cautionary but non-destructive -- deprecate, unpublish, override. */
+.btn-warning {
+    color: #2a1d00;
+    background-color: #ffc107;
+    border: 1px solid #ffc107;
+    font-weight: 600;
+}
+
+.btn-warning:hover {
+    background-color: #ffce3a;
+    border-color: #ffce3a;
+}
+
+.btn-warning:active {
+    background-color: #e6ac00;
+    border-color: #e6ac00;
+}
+
+/* ===== SIZE MODIFIERS (optional, handy for table row actions) ===== */
+.btn-sm {
+    height: 2rem;
+    padding: 0 0.7rem;
+    font-size: 0.85rem;
+    border-radius: var(--nx-radius-sm);
+}
+
+.btn-lg {
+    height: 3rem;
+    padding: 0 1.5rem;
+    font-size: 1.05rem;
+}
+
+/* ===== ICON-ONLY MODIFIER ===== */
+.btn-icon {
+    width: var(--nx-button-height);
+    padding: 0;
+}
+
+.btn-icon.btn-sm {
+    width: 2rem;
+}
+
+/* ===== FOCUS STATE (shared across all variants) ===== */
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--nx-bg),
+    0 0 0 3px rgba(252, 173, 255, 0.35);
+}
+
+.btn-danger:focus-visible,
+.btn-danger-solid:focus-visible {
+    box-shadow: 0 0 0 1px var(--nx-bg),
+    0 0 0 3px rgba(255, 90, 106, 0.35);
+}

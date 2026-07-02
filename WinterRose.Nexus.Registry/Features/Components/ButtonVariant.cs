@@ -6,5 +6,6 @@ public enum ButtonVariant
     Secondary,
     Outline,
     Link,
-    Ghost
+    Ghost,
+    Danger
 }

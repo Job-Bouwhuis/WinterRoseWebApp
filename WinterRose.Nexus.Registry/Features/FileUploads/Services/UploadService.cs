@@ -2,6 +2,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Components.Forms;
 using System.Text.RegularExpressions;
+using WinterRose.Nexus.Registry.Features.FileUploads.Models;
 using WinterRose.Nexus.Shared;
 using WinterRose.WinterForgeSerializing;
 
@@ -22,7 +23,7 @@ public static class FileUploadGlobals
     private const string UPLOADS_ROOT = "uploads";
 }
 
-public class UploadService(IAsyncQueue<UploadCompletedEvent> asyncQueue)
+public class UploadService(IAsyncEventQueue<UploadCompletedEvent> asyncEventQueue)
 {
     private readonly DirectoryInfo uploadsFolder = FileUploadGlobals.uploadsFolder;
 
@@ -40,6 +41,7 @@ public class UploadService(IAsyncQueue<UploadCompletedEvent> asyncQueue)
             throw new InvalidOperationException("App Name is required.");
 
         var appId = GenerateAppId(appEntry.AppId);
+        
         var safeVersion = version.ToString(VersionStringFormat.FolderSafe);
 
         var appRoot = Path.Combine(uploadsFolder.FullName, appId);
@@ -51,6 +53,8 @@ public class UploadService(IAsyncQueue<UploadCompletedEvent> asyncQueue)
         // ----------------------------
         // Write app metadata (.appdetails)
         // ----------------------------
+        
+        appEntry.AppId = appId;
         WriteAppDetails(appRoot, appEntry);
 
         // ----------------------------
@@ -58,8 +62,7 @@ public class UploadService(IAsyncQueue<UploadCompletedEvent> asyncQueue)
         // ----------------------------
         foreach (var entry in files)
         {
-            var relativePath = NormalizeRelativePath(entry.RelativePath);
-            var fullPath = Path.Combine(versionPath, "files", relativePath);
+            var fullPath = Path.Combine(versionPath, "files", entry.RelativePath);
 
             var directory = Path.GetDirectoryName(fullPath);
             if (!string.IsNullOrEmpty(directory))
@@ -90,7 +93,7 @@ public class UploadService(IAsyncQueue<UploadCompletedEvent> asyncQueue)
             versionPath,
             version);
 
-        asyncQueue.Publish(new UploadCompletedEvent(appId, appRoot, version));
+        asyncEventQueue.Publish(new UploadCompletedEvent(appId, appRoot, version));
     }
     
     private void WriteAppDetails(string appRoot, AppEntry incoming)
@@ -130,18 +133,6 @@ public class UploadService(IAsyncQueue<UploadCompletedEvent> asyncQueue)
         var path = Path.Combine(versionPath, ".versiondetails");
 
         WinterForge.SerializeToFile(version, path, TargetFormat.FormattedHumanReadable);
-    }
-    
-    private string NormalizeRelativePath(string path)
-    {
-        path = path.Replace('\\', '/').TrimStart('/');
-
-        // "MyApp/subfolder/file.dll" > "subfolder/file.dll"
-        var slashIndex = path.IndexOf('/');
-        if (slashIndex >= 0)
-            path = path[(slashIndex + 1)..];
-
-        return path.Replace('/', Path.DirectorySeparatorChar);
     }
     
     private string MergeString(string incoming, string? existing)

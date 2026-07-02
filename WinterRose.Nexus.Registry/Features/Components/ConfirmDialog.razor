@@ -1,0 +1,94 @@
+@* 
+    Generic confirmation dialog for destructive actions.
+    Usage:
+
+        <ConfirmDialog @ref="confirmDialog" />
+
+        await confirmDialog.ShowAsync(
+            title: "Delete version 1.7.0?",
+            message: "This will permanently remove the version and its files from the server. This cannot be undone.",
+            confirmText: "Delete",
+            onConfirm: async () => await DeleteVersion(version));
+*@
+
+@if (IsOpen)
+{
+    <div class="confirm-dialog-backdrop" @onclick="Cancel">
+        <div class="confirm-dialog" @onclick:stopPropagation="true">
+            <div class="confirm-dialog-title">@Title</div>
+
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <p class="confirm-dialog-message">@Message</p>
+            }
+
+            <div class="confirm-dialog-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="Cancel" Disabled="IsBusy">
+                    @CancelText
+                </Button>
+                <Button Variant="ButtonVariant.Danger" AdditionalClass="btn-danger-solid" OnClick="Confirm" Disabled="IsBusy">
+                    @(IsBusy ? "Working..." : ConfirmText)
+                </Button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool IsOpen;
+    private bool IsBusy;
+    private string Title = "";
+    private string? Message;
+    private string ConfirmText = "Confirm";
+    private string CancelText = "Cancel";
+    private Func<Task>? OnConfirmCallback;
+
+    public Task ShowAsync(
+        string title,
+        string? message,
+        Func<Task> onConfirm,
+        string confirmText = "Confirm",
+        string cancelText = "Cancel")
+    {
+        Title = title;
+        Message = message;
+        ConfirmText = confirmText;
+        CancelText = cancelText;
+        OnConfirmCallback = onConfirm;
+        IsOpen = true;
+        IsBusy = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void Cancel()
+    {
+        if (IsBusy)
+            return;
+
+        IsOpen = false;
+        OnConfirmCallback = null;
+        StateHasChanged();
+    }
+
+    private async Task Confirm()
+    {
+        if (OnConfirmCallback is null || IsBusy)
+            return;
+
+        IsBusy = true;
+        StateHasChanged();
+
+        try
+        {
+            await OnConfirmCallback.Invoke();
+        }
+        finally
+        {
+            IsBusy = false;
+            IsOpen = false;
+            OnConfirmCallback = null;
+            StateHasChanged();
+        }
+    }
+}

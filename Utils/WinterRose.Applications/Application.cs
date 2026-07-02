@@ -11,7 +11,7 @@ namespace WinterRose.Applications;
 
 public abstract class Application : IApplication
 {
-    protected internal CancellationTokenSource cancelSource = new CancellationTokenSource();
+    protected internal CancellationTokenSource cancelSource;
     public IServiceProvider Services { get; set; }
     private Task? runningTask;
 

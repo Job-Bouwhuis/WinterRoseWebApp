@@ -2,18 +2,16 @@
 using WinterRose.Nexus.Registry.Features.FileUploads.Services;
 using WinterRose.Nexus.Registry.Features.FileUploads.Models;
 using WinterRose.Nexus.Shared;
+using WinterRose.WinterForgeSerializing;
 
 namespace WinterRose.Nexus.Registry.Features.Api.Apps.Services;
 
-public partial class AppRepository
+public class AppRepository
 {
     private readonly DirectoryInfo uploadsFolder;
-    private readonly AppDiffService appDiffService;
 
-    public AppRepository(AppDiffService appDiffService)
+    public AppRepository()
     {
-        this.appDiffService = appDiffService;
-
         uploadsFolder = FileUploadGlobals.uploadsFolder;
     }
 
@@ -26,7 +24,8 @@ public partial class AppRepository
             uploadsFolder.FullName,
             appName,
             "versions",
-            appVersion.ToString(VersionStringFormat.FolderSafe));
+            appVersion.ToString(VersionStringFormat.FolderSafe),
+            "files");
 
         if (!Directory.Exists(versionRoot))
             throw new DirectoryNotFoundException(
@@ -53,7 +52,8 @@ public partial class AppRepository
             uploadsFolder.FullName,
             appName,
             "versions",
-            appVersion.ToString(VersionStringFormat.FolderSafe));
+            appVersion.ToString(VersionStringFormat.FolderSafe),
+            "files");
 
         if (!Directory.Exists(versionRoot))
             throw new DirectoryNotFoundException(
@@ -90,15 +90,6 @@ public partial class AppRepository
         return output;
     }
 
-    public async Task<Stream> OpenDiff(
-        string appName,
-        AppVersion fromVersion,
-        AppVersion toVersion
-    )
-    {
-        return await appDiffService.OpenDiffStreamAsync(appName, fromVersion, toVersion);
-    }
-
 
     public async Task<List<AppEntry>> GetAppEntries()
     {
@@ -127,100 +118,127 @@ public partial class AppRepository
 
         return result.Where(r => r != null).ToList();
     }
+    
+    public AppEntry GetAppEntry(string appId)
+    {
+        var appPath = Path.Combine(uploadsFolder.FullName, appId);
 
-    private string GetLatestVersionFromAppPath(string appPath)
+        return Directory.Exists(appPath)
+            ? FetchUploadEntryFromPath(appPath)
+            : throw new InvalidOperationException($"App with id {appId} not found in the registry.");
+    }
+
+    public AppVersion GetLatestVersion(string appId, string tag = "")
     {
         AppVersion? latest = null;
-        string versionsRoot = Path.Combine(appPath, "versions");
 
-        foreach (var subDir in Directory.EnumerateDirectories(versionsRoot))
+        string versionsRoot = Path.Combine(
+            uploadsFolder.FullName,
+            appId,
+            "versions");
+
+        if (!Directory.Exists(versionsRoot))
+            throw new DirectoryNotFoundException(versionsRoot);
+
+        foreach (string versionDir in Directory.EnumerateDirectories(versionsRoot))
         {
-            var folderName = Path.GetFileName(subDir);
+            string detailsPath = Path.Combine(versionDir, ".versiondetails");
 
-            if (folderName.Equals("latest", StringComparison.OrdinalIgnoreCase))
+            if (!File.Exists(detailsPath))
                 continue;
 
-            if (folderName.Equals("diffs", StringComparison.OrdinalIgnoreCase))
+            using FileStream stream = new(
+                detailsPath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read);
+
+            AppVersion current = WinterForge.DeserializeFromHumanReadableStream<AppVersion>(stream);
+
+            if (!string.Equals(current.Tag, tag, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            AppVersion current;
-
-            try
-            {
-                current = new AppVersion(folderName);
-            }
-            catch
-            {
-                continue;
-            }
-
-            if (latest is null || current.CompareTo(latest) > 0)
+            if (latest is null || current > latest)
                 latest = current;
         }
 
-        return latest?.ToString(VersionStringFormat.FolderSafe) ?? "0_0_0";
+        return latest ?? throw new InvalidOperationException(
+            $"No versions found for app '{appId}' on branch '{tag}'.");
     }
 
     private AppEntry FetchUploadEntryFromPath(string appPath)
     {
-        var uploadName = Path.GetFileName(appPath);
+        string detailsPath = Path.Combine(appPath, ".appdetails");
 
-        var versions = new List<AppVersion>();
-        var diffs = new List<DiffEntry>();
+        if (!File.Exists(detailsPath))
+            throw new FileNotFoundException(detailsPath);
+
+        AppEntry app;
+
+        using (FileStream stream = new(
+                   detailsPath,
+                   FileMode.Open,
+                   FileAccess.Read,
+                   FileShare.Read))
+        {
+            app = WinterForge.DeserializeFromHumanReadableStream<AppEntry>(stream);
+        }
+
+        app.Versions.Clear();
+        app.Diffs.Clear();
 
         string versionsRoot = Path.Combine(appPath, "versions");
 
-        if (Directory.Exists(versionsRoot))
+        if (!Directory.Exists(versionsRoot))
+            return app;
+
+        foreach (string versionDir in Directory.EnumerateDirectories(versionsRoot))
         {
-            foreach (var versionDir in Directory.EnumerateDirectories(versionsRoot))
+            string versionDetailsPath = Path.Combine(versionDir, ".versiondetails");
+
+            if (!File.Exists(versionDetailsPath))
+                continue;
+
+            AppVersion version;
+
+            using (FileStream stream = new(
+                       versionDetailsPath,
+                       FileMode.Open,
+                       FileAccess.Read,
+                       FileShare.Read))
             {
-                var folderName = Path.GetFileName(versionDir);
+                version =
+                    WinterForge.DeserializeFromHumanReadableStream<AppVersion>(stream);
+            }
 
-                AppVersion appVersion;
+            app.Versions.Add(version);
 
-                try
+            string diffDir = Path.Combine(versionDir, "diffs");
+
+            if (!Directory.Exists(diffDir))
+                continue;
+
+            foreach (string diffFile in Directory.EnumerateFiles(diffDir, "*.wfdiff"))
+            {
+                string toVersion = Path.GetFileNameWithoutExtension(diffFile);
+
+                app.Diffs.Add(new DiffEntry
                 {
-                    appVersion = new AppVersion(folderName);
-                }
-                catch
-                {
-                    continue;
-                }
-
-                versions.Add(appVersion);
-
-                string diffDir = Path.Combine(versionDir, "diffs");
-
-                if (Directory.Exists(diffDir))
-                {
-                    foreach (var diffFile in Directory.EnumerateFiles(diffDir))
-                    {
-                        var fileName = Path.GetFileName(diffFile);
-                        var toIndex = fileName.IndexOf("_TO_", StringComparison.OrdinalIgnoreCase);
-                        if (toIndex < 0) continue;
-
-                        var from = fileName[..toIndex];
-                        var to = fileName[(toIndex + 4)..];
-
-                        diffs.Add(new DiffEntry
-                        {
-                            FromVersion = from,
-                            ToVersion = to,
-                            FilePath = diffFile,
-                            FileName = fileName,
-                        });
-                    }
-                }
+                    FromVersion = version.ToString(VersionStringFormat.FolderSafe),
+                    ToVersion = toVersion,
+                    FileName = Path.GetFileName(diffFile),
+                    FilePath = diffFile
+                });
             }
         }
 
-        versions.Sort((a, b) => a.CompareTo(b));
+        app.Versions.Sort();
 
-        return new AppEntry
-        {
-            AppId = uploadName,
-            Versions = versions,
-            Diffs = diffs,
-        };
+        return app;
+    }
+
+    public async Task DeleteVersion(string appAppId, string versionVersionLabel)
+    {
+        
     }
 }

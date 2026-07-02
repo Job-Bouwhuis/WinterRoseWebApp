@@ -1,11 +1,12 @@
 ﻿using Eto.Drawing;
 using Eto.Forms;
+using WinterRose.Applications;
 using WinterRose.Nexus.Interface.Windows;
 
 namespace WinterRose.Nexus.Interface;
 
 
-public class AppTray(UiManager ui)
+public class AppTray(UiManager ui, IApplication app)
 {
     private TrayIndicator tray;
     private bool isInitialized;
@@ -40,10 +41,28 @@ public class AppTray(UiManager ui)
 
         menu.Items.Add(new ButtonMenuItem
         {
+            Text = "Open Library",
+            Command = new Command((s, e) =>
+            {
+                ui.Show<LibraryWindow>();
+            })
+        });
+        
+        menu.Items.Add(new ButtonMenuItem
+        {
             Text = "Open Store",
             Command = new Command((s, e) =>
             {
                 ui.Show<ApplicationStoreWindow>();
+            })
+        });
+        
+        menu.Items.Add(new ButtonMenuItem
+        {
+            Text = "Close Nexus",
+            Command = new Command((s, e) =>
+            {
+                app.Stop();
             })
         });
         

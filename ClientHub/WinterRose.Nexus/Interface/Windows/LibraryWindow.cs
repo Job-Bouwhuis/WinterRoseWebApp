@@ -1,0 +1,800 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Eto.Drawing;
+using Eto.Forms;
+using WinterRose.DependancyInjection;
+using WinterRose.Nexus.Models;
+using WinterRose.Nexus.Services;
+using WinterRose.Nexus.Shared;
+using WinterRose.Shortcuts;
+using Button = Eto.Forms.Button;
+using ComboBox = Eto.Forms.ComboBox;
+using Dialog = Eto.Forms.Dialog;
+using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
+using Label = Eto.Forms.Label;
+using ListBox = Eto.Forms.ListBox;
+using MenuBar = Eto.Forms.MenuBar;
+
+namespace WinterRose.Nexus.Interface.Windows;
+
+public class LibraryWindow(
+    MainThread mainThread,
+    IServiceProvider services,
+    ClientAppRepository appRepo,
+    AppServerClient server,
+    ApplicationInstaller installer,
+    ApplicationStarter appStarter,
+    [Specifically<ApplicationStoreWindow>] WindowBase storeWindow)
+    : WindowBase("Nexus Library", mainThread, services)
+{
+    // Palette (shared visual language with InstallationProgressWindow)
+    private static Color BackgroundColor = Color.FromArgb(24, 26, 31);
+    private static readonly Color PanelColor = Color.FromArgb(32, 35, 41);
+    private static readonly Color PanelColorAlt = Color.FromArgb(28, 30, 36);
+    private static readonly Color BorderColor = Color.FromArgb(48, 51, 58);
+    private static readonly Color TextPrimary = Color.FromArgb(235, 236, 238);
+    private static readonly Color TextMuted = Color.FromArgb(150, 154, 162);
+    private static readonly Color AccentColor = Color.FromArgb(88, 145, 255);
+
+    private List<LocalAppEntry> installedApps = new();
+    private readonly List<AppEntry> apps = new();
+
+    private LocalAppEntry? selectedLocalApp;
+    private AppEntry? selectedServerApp;
+    private AppVersion? selectedVersion;
+
+    private ListBox installedList;
+    private ListBox recentList;
+
+    private Label appTitle;
+    private Label appPublisher;
+    private Label appVersion;
+    private Label appTags;
+    private TextArea appDetails;
+
+    private Button launchButton;
+    private Button utilityButton;
+
+    private Panel sidebar;
+
+    private bool suppressPinChange;
+
+    protected override Control BuildContent()
+    {
+        Width = 720;
+        Height = 560;
+        BackgroundColor = InstallationProgressWindow_BackgroundColorHack();
+
+        // ==========================================================
+        // MENU
+        // ==========================================================
+        var menu = new MenuBar();
+
+        var installMenu = new ButtonMenuItem
+        {
+            Text = "Install new app"
+        };
+
+        var fromStoreItem = new ButtonMenuItem
+        {
+            Text = "From store"
+        };
+
+        var fromSecretItem = new ButtonMenuItem
+        {
+            Text = "From secret key"
+        };
+
+        installMenu.Items.Add(fromStoreItem);
+        installMenu.Items.Add(fromSecretItem);
+        menu.Items.Add(installMenu);
+
+        fromStoreItem.Click += OnOpenStoreClicked;
+        fromSecretItem.Click += OnSecretKeyClicked;
+
+        Menu = menu;
+
+        // ==========================================================
+        // LEFT SIDE
+        // ==========================================================
+        installedList = new ListBox
+        {
+            BackgroundColor = PanelColor,
+            TextColor = TextPrimary
+        };
+        installedList.SelectedIndexChanged += OnInstalledSelected;
+
+        recentList = new ListBox
+        {
+            Height = 110,
+            BackgroundColor = PanelColor,
+            TextColor = TextPrimary
+        };
+
+        recentList.SelectedIndexChanged += OnRecentSelected;
+
+        var leftPanel = new TableLayout
+        {
+            Padding = new Padding(16),
+            Spacing = new Size(0, 10)
+        };
+
+        leftPanel.Rows.Add(new TableRow(
+            new Label
+            {
+                Text = "INSTALLED APPS",
+                Font = new Font(SystemFont.Bold, 9),
+                TextColor = TextMuted
+            }));
+
+        leftPanel.Rows.Add(new TableRow(installedList)
+        {
+            ScaleHeight = true
+        });
+
+        leftPanel.Rows.Add(new TableRow(
+            new Label
+            {
+                Text = "RECENTLY STARTED",
+                Font = new Font(SystemFont.Bold, 9),
+                TextColor = TextMuted
+            }));
+
+        leftPanel.Rows.Add(new TableRow(recentList));
+
+        var leftContainer = new Panel
+        {
+            BackgroundColor = BackgroundColor,
+            Content = leftPanel
+        };
+
+        // ==========================================================
+        // RIGHT SIDE
+        // ==========================================================
+        sidebar = new Panel
+        {
+            Width = 360,
+            Visible = false,
+            BackgroundColor = PanelColorAlt
+        };
+
+        appTitle = new Label
+        {
+            Font = new Font(SystemFont.Bold, 16),
+            TextColor = TextPrimary
+        };
+
+        appPublisher = new Label
+        {
+            TextColor = TextMuted
+        };
+
+        appTags = new Label
+        {
+            TextColor = TextMuted
+        };
+
+        appVersion = new Label
+        {
+            TextColor = AccentColor
+        };
+
+        appDetails = new TextArea
+        {
+            ReadOnly = true,
+            Wrap = true,
+            BackgroundColor = PanelColorAlt,
+            TextColor = TextPrimary
+        };
+
+        launchButton = new Button
+        {
+            Text = "Launch"
+        };
+
+        utilityButton = new Button
+        {
+            Text = "Manage..."
+        };
+
+        launchButton.Click += OnLaunchClicked;
+        utilityButton.Click += OnUtilityClicked;
+
+        var buttonLayout = new TableLayout
+        {
+            Spacing = new Size(8, 0)
+        };
+
+        buttonLayout.Rows.Add(new TableRow(
+            new TableCell(launchButton)
+            {
+                ScaleWidth = true
+            },
+            utilityButton));
+
+        var sidebarLayout = new TableLayout
+        {
+            Padding = new Padding(18),
+            Spacing = new Size(0, 8)
+        };
+
+        sidebarLayout.Rows.Add(new TableRow(appTitle));
+        sidebarLayout.Rows.Add(new TableRow(appPublisher));
+        sidebarLayout.Rows.Add(new TableRow(appVersion));
+        sidebarLayout.Rows.Add(new TableRow(appTags));
+
+        sidebarLayout.Rows.Add(new TableRow(CreateDivider()));
+
+        sidebarLayout.Rows.Add(new TableRow(appDetails)
+        {
+            ScaleHeight = true
+        });
+
+        sidebarLayout.Rows.Add(new TableRow(CreateDivider()));
+        sidebarLayout.Rows.Add(new TableRow(buttonLayout));
+
+        sidebar.Content = sidebarLayout;
+
+        // ==========================================================
+        // MAIN CONTENT
+        // ==========================================================
+        var content = new TableLayout
+        {
+            Padding = new Padding(0),
+            Spacing = new Size(0, 0),
+            BackgroundColor = BackgroundColor
+        };
+
+        content.Rows.Add(new TableRow(
+            new TableCell(leftContainer)
+            {
+                ScaleWidth = true
+            },
+            sidebar));
+
+        return content;
+    }
+
+    // Small helper kept local so BuildContent above reads cleanly;
+    // returns the same background used by InstallationProgressWindow.
+    private static Color InstallationProgressWindow_BackgroundColorHack() => BackgroundColor;
+
+    private void UpdateSidebar()
+    {
+        if (selectedLocalApp == null || selectedServerApp == null)
+            return;
+
+        appTitle.Text = selectedServerApp.DisplayName;
+
+        appPublisher.Text = $"by {selectedServerApp.Publisher}";
+
+        appVersion.Text =
+            $"Installed: {selectedLocalApp.InstalledVersion.ToString(VersionStringFormat.HumanReadable)}"
+            + (selectedLocalApp.PinVersion ? " (Pinned)" : "");
+
+        appTags.Text = selectedServerApp.Tags != null && selectedServerApp.Tags.Count > 0
+            ? string.Join(" • ", selectedServerApp.Tags)
+            : "";
+
+        appDetails.Text =
+            !string.IsNullOrWhiteSpace(selectedServerApp.LongDescription)
+                ? selectedServerApp.LongDescription
+                : selectedServerApp.ShortDescription;
+    }
+
+    Control CreateDivider()
+    {
+        return new Panel
+        {
+            BackgroundColor = BorderColor,
+            Height = 1
+        };
+    }
+
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+
+        installedApps = appRepo.GetInstalledApps();
+        PopulateLists();
+    }
+
+    private void PopulateLists()
+    {
+        installedList.Items.Clear();
+        recentList.Items.Clear();
+
+        foreach (var app in installedApps)
+            installedList.Items.Add(app.DisplayName ?? app.AppId);
+
+        var recent = installedApps
+            .Where(x => x.LastStartedAt.HasValue)
+            .OrderByDescending(x => x.LastStartedAt)
+            .Take(5)
+            .ToList();
+
+        foreach (var app in recent)
+            recentList.Items.Add(app.DisplayName ?? app.AppId);
+    }
+
+    private async Task RefreshLibrary()
+    {
+        installedApps = appRepo.GetInstalledApps();
+        PopulateLists();
+
+        if (selectedLocalApp == null)
+            return;
+
+        var stillInstalled = installedApps
+            .FirstOrDefault(x => x.AppId == selectedLocalApp.AppId);
+
+        if (stillInstalled == null)
+        {
+            HideSidebar();
+            return;
+        }
+
+        selectedLocalApp = stillInstalled;
+        selectedServerApp = await server.GetAppEntryAsync(stillInstalled.AppId);
+
+        UpdateSidebar();
+    }
+
+    private async void OnInstalledSelected(object? sender, EventArgs e)
+    {
+        if (installedList.SelectedIndex < 0 || installedList.SelectedIndex >= installedApps.Count)
+            return;
+
+        selectedLocalApp = installedApps[installedList.SelectedIndex];
+        selectedServerApp = await server.GetAppEntryAsync(selectedLocalApp.AppId);
+
+        ShowSidebar();
+        UpdateSidebar();
+    }
+
+    private async void OnRecentSelected(object? sender, EventArgs e)
+    {
+        if (recentList.SelectedIndex < 0)
+            return;
+
+        var recent = installedApps
+            .Where(x => x.LastStartedAt.HasValue)
+            .OrderByDescending(x => x.LastStartedAt)
+            .Take(5)
+            .ToList();
+
+        selectedLocalApp = recent[recentList.SelectedIndex];
+        selectedServerApp = await server.GetAppEntryAsync(selectedLocalApp.AppId);
+
+        ShowSidebar();
+        UpdateSidebar();
+    }
+
+
+    private async void OnLaunchClicked(object? sender, EventArgs e)
+    {
+        if (selectedLocalApp == null)
+            return;
+
+        try
+        {
+            await appStarter.Start(selectedLocalApp.AppId, true);
+            selectedLocalApp.LastStartedAt = DateTime.UtcNow;
+            installedApps = appRepo.GetInstalledApps();
+
+            RefreshLibrary();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, MessageBoxType.Error);
+        }
+    }
+
+    // ==========================================================
+    // UTILITY DIALOG (versions + shortcuts)
+    // ==========================================================
+    private async void OnUtilityClicked(object? sender, EventArgs e)
+    {
+        if (selectedLocalApp == null)
+            return;
+
+        var dialog = new Dialog
+        {
+            Title = $"Manage {selectedLocalApp.DisplayName ?? selectedLocalApp.AppId}",
+            Width = 340,
+            Height = 260,
+            BackgroundColor = BackgroundColor
+        };
+
+        var layout = new TableLayout
+        {
+            Padding = new Padding(14),
+            Spacing = new Size(0, 10)
+        };
+
+        layout.Rows.Add(new TableRow(new Label
+        {
+            Text = "Versions",
+            Font = new Font(SystemFont.Bold, 10),
+            TextColor = TextPrimary
+        }));
+
+        var changeVersionButton = new Button { Text = "Change version..." };
+        changeVersionButton.Click += async (s, e2) =>
+        {
+            dialog.Close();
+            await OnVersionsClicked(sender, e);
+        };
+        layout.Rows.Add(new TableRow(changeVersionButton));
+
+        layout.Rows.Add(new TableRow(new Label
+        {
+            Text = "Desktop Shortcut",
+            Font = new Font(SystemFont.Bold, 10),
+            TextColor = TextPrimary
+        }));
+
+        string shortcutPath = GetShortcutPath(selectedLocalApp);
+        bool shortcutExists = File.Exists(shortcutPath);
+
+        var createShortcutButton = new Button
+        {
+            Text = "Create desktop shortcut",
+            Enabled = !shortcutExists
+        };
+        var removeShortcutButton = new Button
+        {
+            Text = "Remove desktop shortcut",
+            Enabled = shortcutExists
+        };
+
+        createShortcutButton.Click += (s, e2) =>
+        {
+            try
+            {
+                ShortcutMaker.CreateUriShortcut(
+                    shortcutPath,
+                    $"winterrose://update-application?id={selectedLocalApp.AppId}&auto-start=true",
+                    selectedLocalApp.InstallPath);
+
+                createShortcutButton.Enabled = false;
+                removeShortcutButton.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(dialog, ex.Message, MessageBoxType.Error);
+            }
+        };
+
+        removeShortcutButton.Click += (s, e2) =>
+        {
+            try
+            {
+                if (File.Exists(shortcutPath))
+                    File.Delete(shortcutPath);
+
+                removeShortcutButton.Enabled = false;
+                createShortcutButton.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(dialog, ex.Message, MessageBoxType.Error);
+            }
+        };
+
+        layout.Rows.Add(new TableRow(
+            new TableLayout
+            {
+                Spacing = new Size(6, 0),
+                Rows = { new TableRow(createShortcutButton, removeShortcutButton) }
+            }));
+
+        layout.Rows.Add(null); // spacer
+
+        var closeButton = new Button { Text = "Close" };
+        closeButton.Click += (s, e2) => dialog.Close();
+        layout.Rows.Add(new TableRow(new TableCell(closeButton) { ScaleWidth = true }));
+
+        dialog.Content = layout;
+        dialog.ShowModal(this);
+    }
+
+    private string GetShortcutPath(LocalAppEntry app)
+    {
+        string desktopDir = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        string fileName = (app.DisplayName ?? app.AppId).Replace(" ", "_");
+
+        string extension = Environment.OSVersion.Platform == PlatformID.Win32NT
+            ? ".lnk"
+            : ".desktop";
+
+        return Path.Combine(desktopDir, fileName + extension);
+    }
+
+    // ==========================================================
+    // VERSION SWITCHING (store-style sidebar in a dialog)
+    // ==========================================================
+    private async Task OnVersionsClicked(object? sender, EventArgs e)
+    {
+        if (selectedLocalApp == null)
+            return;
+
+        var app = await server.GetAppEntryAsync(selectedLocalApp.AppId);
+
+        var dialog = new Dialog<AppVersion>
+        {
+            Title = "Change Version",
+            Width = 360,
+            Height = 520,
+            BackgroundColor = BackgroundColor
+        };
+
+        var layout = new TableLayout
+        {
+            Padding = new Padding(12),
+            Spacing = new Size(0, 8)
+        };
+
+        var titleLabel = new Label
+        {
+            Text = app.DisplayName,
+            Font = new Font(SystemFont.Bold, 12),
+            TextAlignment = TextAlignment.Left,
+            TextColor = TextPrimary
+        };
+        layout.Rows.Add(new TableRow(titleLabel));
+
+        var publisherLabel = new Label
+        {
+            Text = app.Publisher ?? "",
+            TextColor = TextMuted,
+            TextAlignment = TextAlignment.Left
+        };
+        layout.Rows.Add(new TableRow(publisherLabel));
+
+        layout.Rows.Add(new TableRow(new Label
+        {
+            Text = "Branch",
+            TextAlignment = TextAlignment.Left,
+            TextColor = TextPrimary
+        }));
+
+        var branches = app.Versions
+            .Select(v => v.Tag) // TODO: add "" > "Release" mapping
+            .Distinct()
+            .OrderBy(t => t)
+            .ToList();
+
+        var branchSelector = new ComboBox();
+        foreach (var b in branches)
+            branchSelector.Items.Add(b);
+
+        layout.Rows.Add(new TableRow(branchSelector));
+
+        layout.Rows.Add(new TableRow(new Label
+        {
+            Text = "Versions",
+            TextAlignment = TextAlignment.Left,
+            TextColor = TextPrimary
+        }));
+
+        var versionScroll = new Scrollable { Border = BorderType.Line };
+        var versionList = new ListBox
+        {
+            BackgroundColor = PanelColor,
+            TextColor = TextPrimary
+        };
+        versionScroll.Content = versionList;
+        layout.Rows.Add(new TableRow(versionScroll) { ScaleHeight = true });
+
+        var versionDetailsText = new TextArea
+        {
+            ReadOnly = true,
+            Wrap = true,
+            Height = 90,
+            BackgroundColor = PanelColor,
+            TextColor = TextPrimary
+        };
+        layout.Rows.Add(new TableRow(versionDetailsText));
+
+        List<AppVersion> currentBranchVersions = new();
+
+        void PopulateVersionsForBranch(string tag)
+        {
+            currentBranchVersions = app.Versions
+                .Where(v => string.Equals(v.Tag, tag, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(v => v.UploadedAt)
+                .ToList();
+
+            versionList.Items.Clear();
+            foreach (var v in currentBranchVersions)
+                versionList.Items.Add(v.ToString(VersionStringFormat.HumanReadable));
+
+            versionDetailsText.Text = "";
+        }
+
+        branchSelector.SelectedIndexChanged += (s, e2) =>
+        {
+            if (branchSelector.SelectedIndex < 0)
+                return;
+
+            PopulateVersionsForBranch(branches[branchSelector.SelectedIndex]);
+        };
+
+        versionList.SelectedIndexChanged += (s, e2) =>
+        {
+            if (versionList.SelectedIndex < 0 || versionList.SelectedIndex >= currentBranchVersions.Count)
+                return;
+
+            var v = currentBranchVersions[versionList.SelectedIndex];
+            versionDetailsText.Text = v.Changelog;
+        };
+
+        // Pre-select current branch / version
+        string currentTag = selectedLocalApp.InstalledVersion.Tag;
+        int branchIndex = branches.FindIndex(b =>
+            string.Equals(b, currentTag, StringComparison.OrdinalIgnoreCase));
+
+        if (branchIndex >= 0)
+        {
+            branchSelector.SelectedIndex = branchIndex;
+
+            int versionIndex = currentBranchVersions.FindIndex(v =>
+                v == selectedLocalApp.InstalledVersion);
+
+            if (versionIndex >= 0)
+                versionList.SelectedIndex = versionIndex;
+        }
+        else if (branches.Count > 0)
+        {
+            branchSelector.SelectedIndex = 0;
+        }
+
+        var applyButton = new Button { Text = "Apply" };
+        var cancelButton = new Button { Text = "Cancel" };
+
+        applyButton.Click += (s, e2) =>
+        {
+            if (versionList.SelectedIndex < 0 || versionList.SelectedIndex >= currentBranchVersions.Count)
+            {
+                MessageBox.Show(dialog, "Select a version first.", MessageBoxType.Warning);
+                return;
+            }
+
+            dialog.Close(currentBranchVersions[versionList.SelectedIndex]);
+        };
+
+        cancelButton.Click += (s, e2) => dialog.Close(null);
+
+        var buttonLayout = new TableLayout { Spacing = new Size(6, 0) };
+        buttonLayout.Rows.Add(new TableRow(
+            new TableCell(applyButton) { ScaleWidth = true },
+            cancelButton
+        ));
+        layout.Rows.Add(new TableRow(buttonLayout));
+
+        dialog.Content = layout;
+
+        var result = dialog.ShowModal(this);
+
+        if (result == null)
+            return;
+
+        await ApplyVersionSwitch(app.AppId, result);
+    }
+
+    private async Task ApplyVersionSwitch(string appId, AppVersion version)
+    {
+        var progressWindow = new InstallationProgressWindow(
+            main,
+            services,
+            appTitle: selectedLocalApp?.DisplayName ?? appId);
+
+        progressWindow.Show();
+        progressWindow.ShowUpdating();
+        
+        var progress = progressWindow.CreateUiScope();
+
+        await installer.PatchApplicationAsync(appId, version, progress);
+
+        bool shouldPin = !IsLatestInBranch(appId, version);
+
+        installer.SetPinVersion(appId, shouldPin);
+
+        RefreshLibrary();
+
+        progress.Report(1.0, "Done");
+    }
+
+    private bool IsLatestInBranch(string appId, AppVersion version)
+    {
+        var app = apps.FirstOrDefault(x =>
+            string.Equals(x.AppId, appId, StringComparison.OrdinalIgnoreCase));
+
+        if (app == null)
+            return true;
+
+        var latestInBranch = app.Versions
+            .Where(v => string.Equals(v.Tag, version.Tag, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(v => v.UploadedAt)
+            .FirstOrDefault();
+
+        if (latestInBranch == null)
+            return true;
+
+        return !(latestInBranch > version);
+    }
+
+    private void OnOpenStoreClicked(object? sender, EventArgs e)
+    {
+        storeWindow.InitializeWindow();
+
+        storeWindow.Closed += OnStoreWindowClosed;
+        storeWindow.Show();
+    }
+
+    private void OnStoreWindowClosed(object? sender, EventArgs e)
+    {
+        storeWindow.Closed -= OnStoreWindowClosed;
+        RefreshLibrary();
+    }
+
+    private async void OnSecretKeyClicked(object? sender, EventArgs e)
+    {
+        var dialog = new Dialog<string>
+        {
+            Width = 350,
+            Height = 250,
+            BackgroundColor = BackgroundColor
+        };
+
+        var textBox = new TextBox
+        {
+            PlaceholderText = "xxxxxxxxxxx-abc-00000"
+        };
+
+        dialog.Content = new TableLayout(
+            new Label { Text = "Enter Secret Key / App Id", TextColor = TextPrimary },
+            new TableRow(textBox),
+            new TableRow(
+                new Button
+                {
+                    Text = "Lookup",
+                    Command = new Command((s, e2) => { dialog.Close(textBox.Text); })
+                }
+            )
+        );
+
+        string? appId = dialog.ShowModal(this);
+
+        if (string.IsNullOrWhiteSpace(appId))
+            return;
+
+        try
+        {
+            selectedServerApp = await server.GetAppEntryAsync(appId);
+
+            selectedLocalApp = installedApps
+                .FirstOrDefault(x => x.AppId == appId);
+
+            ShowSidebar();
+            UpdateSidebar();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, MessageBoxType.Error);
+        }
+    }
+
+    private void ShowSidebar() => sidebar.Visible = true;
+
+    private void HideSidebar()
+    {
+        sidebar.Visible = false;
+        selectedLocalApp = null;
+        selectedServerApp = null;
+    }
+}

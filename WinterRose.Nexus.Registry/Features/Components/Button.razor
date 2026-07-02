@@ -1,18 +1,18 @@
 @if (AsLink)
 {
-    <a href="@Href" class="nx-btn @ButtonClass @GetVariantClass()" @onclick="OnClick">
+    <a href="@Href" class="nx-btn @ButtonClass @GetVariantClass() @AdditionalClass" @onclick="OnClick">
         @ChildContent
     </a>
 }
 else if (Submit)
 {
-    <button type="submit" class="nx-btn @ButtonClass @GetVariantClass()" @onclick="OnClick" disabled="@Disabled">
+    <button type="submit" class="nx-btn @ButtonClass @GetVariantClass() @AdditionalClass" @onclick="OnClick" disabled="@Disabled">
         @ChildContent
     </button>
 }
 else
 {
-    <button type="button" class="nx-btn @ButtonClass @GetVariantClass()" @onclick="OnClick" disabled="@Disabled">
+    <button type="button" class="nx-btn @ButtonClass @GetVariantClass() @AdditionalClass" @onclick="OnClick" disabled="@Disabled">
         @ChildContent
     </button>
 }
@@ -23,6 +23,8 @@ else
 
     [Parameter]
     public string? ButtonClass { get; set; }
+
+    [Parameter] public string AdditionalClass { get; set; } = "";
 
     [Parameter]
     public ButtonVariant Variant { get; set; } = ButtonVariant.Primary;
@@ -44,11 +46,12 @@ else
 
     private string GetVariantClass() => Variant switch
     {
-        ButtonVariant.Primary => "nx-btn--primary",
-        ButtonVariant.Secondary => "nx-btn--secondary",
-        ButtonVariant.Outline => "nx-btn--outline",
-        ButtonVariant.Link => "nx-btn--link",
-        ButtonVariant.Ghost => "nx-btn--ghost",
+        ButtonVariant.Primary => "btn-primary",
+        ButtonVariant.Secondary => "btn-secondary",
+        ButtonVariant.Outline => "btn-outline",
+        ButtonVariant.Link => "btn-link",
+        ButtonVariant.Ghost => "btn-ghost",
+        ButtonVariant.Danger => "btn-danger",
         _ => "nx-btn--primary"
     };
 }

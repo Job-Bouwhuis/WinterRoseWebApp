@@ -2,7 +2,7 @@
 
 public class AppLaunchTarget
 {
-    public string RelativePath { get; init; } = "";
+    public string Path { get; init; } = "";
 
     public string[] Arguments { get; init; } = [];
 }

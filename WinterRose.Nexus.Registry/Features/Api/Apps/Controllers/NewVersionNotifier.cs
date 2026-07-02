@@ -1,14 +1,16 @@
 ﻿using System.Buffers;
 using Microsoft.AspNetCore.Mvc;
+using WinterRose.Nexus.Registry.Features.FileUploads.Models;
 using WinterRose.Nexus.Registry.Features.FileUploads.Pages;
 using WinterRose.Nexus.Registry.Features.FileUploads.Services;
+using WinterRose.Nexus.Shared;
 using WinterRose.WinterForgeSerializing;
 
 namespace WinterRose.Nexus.Registry.Features.Api.Apps.Controllers;
 
 [ApiController]
 [Route("versions/event")]
-public sealed class NewVersionNotifier(IAsyncQueue<UploadCompletedEvent> queue, ILogger<NewVersionNotifier> logger) : ControllerBase
+public sealed class NewVersionNotifier(IAsyncEventQueue<UploadCompletedEvent> eventQueue, ILogger<NewVersionNotifier> logger) : ControllerBase
 {
     [HttpGet("{appId}")]
     public async Task Get(string appId)
@@ -17,7 +19,7 @@ public sealed class NewVersionNotifier(IAsyncQueue<UploadCompletedEvent> queue, 
 
         logger.LogInformation("A request for new version notifications received for app {AppId}", appId);
 
-        await queue.SubscribeAsync(async (ev, token) =>
+        await eventQueue.SubscribeAsync(async (ev, token) =>
         {
             logger.LogInformation("A new version notification received for app {AppId} version {Version}", ev.BasePath, ev.AppVersion.ToString());
             if (ev.Name != appId)

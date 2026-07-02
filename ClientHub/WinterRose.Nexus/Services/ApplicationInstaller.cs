@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
 using WinterRose.Diff;
+using WinterRose.Nexus.Models;
 using WinterRose.Nexus.Shared;
 using WinterRose.ProgressKeeping;
 
@@ -11,37 +12,35 @@ namespace WinterRose.Nexus.Services;
 public class ApplicationInstaller
 {
     private readonly AppServerClient server;
+    private readonly ClientAppRepository repository;
     private readonly string appsRoot;
 
-    public ApplicationInstaller(AppServerClient server)
+    public ApplicationInstaller(AppServerClient server, ClientAppRepository repository)
     {
         this.server = server;
+        this.repository = repository;
 
         appsRoot = Path.Combine(Environment.CurrentDirectory, "apps");
     }
 
-    private string GetAppRoot(string appName)
-    {
-        return Path.Combine(appsRoot, appName);
-    }
+    private string GetAppRoot(string appId) => repository.GetAppRoot(appId);
 
-    private string GetAppFilesPath(string appName)
-    {
-        return Path.Combine(appsRoot, appName, "app");
-    }
+    private string GetAppFilesPath(string appId) => repository.GetAppFilesPath(appId);
 
     // =========================================================
     // FULL INSTALL
     // =========================================================
     public async Task InstallFromArchiveAsync(
-        string appName,
+        string appId,
         AppVersion version,
-        IProgressScope progress)
+        IProgressScope progress,
+        bool pinVersion = false)
     {
-        await using var archiveStream = await server.GetVersionArchiveStreamAsync(appName, version);
+        await using var archiveStream = await server.GetVersionArchiveStreamAsync(appId, version);
+        AppEntry entry = await server.GetAppEntryAsync(appId);
         
-        var appRoot = GetAppRoot(appName);
-        var targetPath = GetAppFilesPath(appName);
+        var appRoot = GetAppRoot(appId);
+        var targetPath = GetAppFilesPath(appId);
 
         var extractScope = progress.CreateChild(0.85);
         var finalizeScope = progress.CreateChild(0.15);
@@ -62,9 +61,10 @@ public class ApplicationInstaller
 
         Directory.Move(tempPath, targetPath);
 
-        await File.WriteAllTextAsync(
-            Path.Combine(appRoot, "version.txt"),
-            version.ToString(VersionStringFormat.FolderSafe));
+        finalizeScope.Report(0.7, "Writing app details");
+
+        var details = new LocalAppEntry(appId, entry.DisplayName, version, targetPath, pinVersion);
+        repository.SaveLocalAppDetails(details);
 
         finalizeScope.Report(1.0, "Install complete");
     }
@@ -73,23 +73,47 @@ public class ApplicationInstaller
     // PATCH / UPDATE
     // =========================================================
     public async Task PatchApplicationAsync(
-        string appName,
-        AppVersion currentVersion,
+        string appId,
         AppVersion newVersion,
         IProgressScope progress)
     {
-        var appPath = GetAppFilesPath(appName);
+        var appPath = GetAppFilesPath(appId);
 
         var applyScope = progress.CreateChild(1.0);
 
         if (!Directory.Exists(appPath))
             throw new DirectoryNotFoundException("App not installed");
 
+        var details = repository.TryReadLocalAppDetails(appId)
+            ?? throw new InvalidOperationException(
+                $"No .localappdetails found for '{appId}'; app is not properly installed.");
+
+        var currentVersion = details.InstalledVersion;
+
         applyScope.Report(0.1, "Applying patch");
 
-        await ApplyDiffStreamAsync(appName, currentVersion, newVersion, appPath, applyScope);
+        await ApplyDiffStreamAsync(appId, currentVersion, newVersion, appPath, applyScope);
+
+        applyScope.Report(0.9, "Writing app details");
+
+        details.InstalledVersion = newVersion;
+        repository.SaveLocalAppDetails(details);
 
         applyScope.Report(1.0, "Patch complete");
+    }
+
+    /// <summary>
+    /// Updates only the user's pin preference for an installed app, without
+    /// touching the installed files or version.
+    /// </summary>
+    public void SetPinVersion(string appId, bool pinVersion)
+    {
+        var details = repository.TryReadLocalAppDetails(appId)
+            ?? throw new InvalidOperationException(
+                $"No .localappdetails found for '{appId}'; app is not installed.");
+
+        details.PinVersion = pinVersion;
+        repository.SaveLocalAppDetails(details);
     }
 
     // =========================================================
@@ -142,20 +166,31 @@ public class ApplicationInstaller
         scope.Report(1.0, "Extraction complete");
     }
 
-
     private async Task ApplyDiffStreamAsync(
-        string appName,
+        string appId,
         AppVersion currentVersion,
         AppVersion newVersion,
         string targetPath,
         IProgressScope scope)
     {
         await using Stream diffStream =
-            await server.GetDiffStreamAsync(appName, currentVersion, newVersion);
-        
+            await server.GetDiffStreamAsync(appId, currentVersion, newVersion);
+
         var diff = DirectoryDiff.Load(diffStream);
-        
+
         DiffApplier applier = new DiffApplier();
         await applier.ApplyDiff(targetPath, diff, scope);
+    }
+
+    public async Task UninstallApplicationAsync(string appId)
+    {
+        DirectoryInfo installDir = new DirectoryInfo(GetAppFilesPath(appId));
+        if (!installDir.Exists)
+            throw new DirectoryNotFoundException("App not installed");
+
+        await Task.Run(() =>
+        {
+            Directory.Delete(installDir.FullName, true);
+        });
     }
 }

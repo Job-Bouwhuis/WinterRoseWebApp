@@ -5,7 +5,7 @@
 /// </summary>
 public class AppEntry
 {
-    public string AppId { get; init; } = "";
+    public string AppId { get; set; } = "";
 
     public string DisplayName { get; set; } = "";
 

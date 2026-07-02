@@ -183,6 +183,8 @@
         module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/fileUpload.js");
         relativePaths = await module.InvokeAsync<string[]>("getRelativePaths", "folderInput");
 
+        relativePaths = relativePaths.Select(RemoveFirstPathSegment).ToArray();
+        
         suggestedName = SuggestNameFromFiles(relativePaths.ToList());
         name = suggestedName;
 
@@ -191,6 +193,21 @@
 
         launchTargetOptions = DetectLaunchTargets(relativePaths.ToList());
         launchTarget = launchTargetOptions.FirstOrDefault() ?? "";
+    }
+    
+    private static string RemoveFirstPathSegment(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return path;
+
+        path = path.Replace("\\", "/");
+
+        int firstSlashIndex = path.IndexOf('/');
+
+        if (firstSlashIndex >= 0 && firstSlashIndex < path.Length - 1)
+            return path[(firstSlashIndex + 1)..];
+
+        return path; // no folder, already root
     }
 
     private void ResetSelection()
@@ -232,27 +249,6 @@
 
         if (!string.IsNullOrWhiteSpace(versionSuffix))
             version += $"-{versionSuffix.Trim()}";
-    }
-
-    private string DetectLaunchTarget(IReadOnlyList<string> files)
-    {
-        var exe = files.FirstOrDefault(f =>
-            f.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
-
-        if (exe is not null)
-            return exe;
-
-        var sh = files.FirstOrDefault(f =>
-            f.EndsWith(".sh", StringComparison.OrdinalIgnoreCase));
-
-        if (sh is not null)
-            return sh;
-
-        var rootCandidates = files
-            .Where(f => !f.Contains('/') && !f.Contains('\\'))
-            .ToList();
-
-        return rootCandidates.FirstOrDefault() ?? files[0];
     }
 
     private string SuggestNameFromFiles(IReadOnlyList<string> files)
@@ -328,7 +324,7 @@
         {
             LaunchTarget = new AppLaunchTarget
             {
-                RelativePath = launchTarget,
+                Path = launchTarget,
                 Arguments = []
             },
             Changelog = ""

@@ -1,10 +1,7 @@
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using Eto.Drawing;
 using WinterRose.Applications;
@@ -12,17 +9,15 @@ using WinterRose.Applications.ApplicationInstanceLocks;
 using WinterRose.Nexus;
 using WinterRose.Configuration;
 using WinterRose.DependancyInjection;
-using WinterRose.DependancyInjection.Logging;
 using WinterRose.Nexus.Interface;
+using WinterRose.Nexus.Interface.Dialogs;
 using WinterRose.Nexus.Interface.Windows;
 using WinterRose.Nexus.Services;
+using WinterRose.Nexus.Shared;
 using WinterRose.Nexus.Uri;
 using WinterRose.Uris;
-using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
 
 _ = typeof(ByteArrayValueProvider);
-
-App host = null;
 
 // this is for testing purposes.
 //args = ["winterrose://show-window"];
@@ -53,7 +48,7 @@ Config config = new("config/hub.txt");
 
 ApplicationBuilder builder = App.CreateBuilder();
 
-// The Http client to talk to the remote server
+// The Http client to talk to the Nexus Registry
 builder.Services.AddHttpClient()
     .Configure<HttpClient>(client =>
     {
@@ -66,6 +61,14 @@ builder.Services.AddHttpClient()
 
 builder.Services.AddSingleton<WindowBase, ApplicationStoreWindow>();
 builder.Services.AddSingleton<WindowBase, TestWindow>();
+builder.Services.AddSingleton<WindowBase, LibraryWindow>();
+
+builder.Services.AddSingleton<IApplicationLauchManager, ApplicationLauchManager>();
+builder.Services.AddSingleton<IApplicationLauncher, WindowsApplicationStarter>();
+builder.Services.AddSingleton<IApplicationLauncher, LinuxApplicationStarter>();
+builder.Services.AddSingleton<ApplicationStarter>();
+
+builder.Services.AddSingleton<IModalDialog, EtoModalDialog>();
 
 builder.Services.AddSingleton<AppServerClient>();
 builder.Services.AddSingleton<EtoShell>();
@@ -75,11 +78,14 @@ builder.Services.AddApplicationMutex("winterrose.hub");
 builder.Services.AddSingleton<IUriHandler, URiLoggerHandler>();
 builder.Services.AddSingleton<IUriHandler, ShowWindowUriHandler>();
 builder.Services.AddSingleton<IUriHandler, ShutdownUriHandler>();
+builder.Services.AddSingleton<IUriHandler, ApplicationUpdateUriHandler>();
 
 builder.Services.AddSingleton<MainThread>();
 
 builder.Services.AddSingleton<ApplicationInstaller>();
 builder.Services.AddSingleton<ClientAppRepository>();
+
+builder.Services.AddSingleton(typeof(IAsyncEventQueue<>), typeof(AsyncEventQueue<>));
 
 builder.Services.AddSingleton<AppTray>();
 

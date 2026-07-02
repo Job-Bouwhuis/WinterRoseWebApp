@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices.JavaScript;
-using WinterRose.Nexus.Shared;
+﻿using WinterRose.Nexus.Shared;
 
 namespace WinterRose.Nexus.SDK;
 
@@ -69,5 +68,3 @@ public class Nexus(string appId) : IDisposable
 
     public void Dispose() => newVersionListener?.Dispose();
 }
-
-internal class NexusNotInstalledException(Exception inner) : Exception("Launching the Nexus client failed. Do you have Nexus installed?", inner);

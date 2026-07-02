@@ -23,6 +23,7 @@
     <Project Path="Utils/WinterRose.DependancyInjection/WinterRose.DependancyInjection.csproj" />
     <Project Path="Utils/WinterRose.OSEnvironments/WinterRose.OSEnvironments.csproj" />
     <Project Path="Utils/WinterRose.ProgressKeeping/WinterRose.ProgressKeeping.csproj" />
+    <Project Path="Utils/WinterRose.TaskLock/WinterRose.TaskLock.csproj" />
     <Project Path="Utils/WinterRose.Uris.Abstractions/WinterRose.Uris.Abstractions.csproj" />
     <Project Path="Utils/WinterRose.Uris/WinterRose.Uris.csproj" />
     <Project Path="WinterRose.Web.Logging/WinterRose.Web.Logging.csproj" Id="4607bd27-6cab-444b-bfd6-ef1670c3a0b2" />

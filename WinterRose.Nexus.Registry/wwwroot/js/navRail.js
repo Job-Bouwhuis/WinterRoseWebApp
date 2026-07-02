@@ -9,14 +9,11 @@
 const NEAR_THRESHOLD_PX = 350;
 
 export function initNavRail() {
-    console.log("INIT");
     const rail = document.getElementById('nxRail');
     if (!rail) return;
-    console.log("rail found")
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
         return; // touch device - skip proximity behavior entirely
     }
-    console.log("Found nxRail");
 
     let isNear = false;
 

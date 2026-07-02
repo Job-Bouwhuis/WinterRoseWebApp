@@ -39,10 +39,11 @@ public class ApplicationBuilder
     
     public Application Build()
     {
+        CancellationTokenSource cts = new CancellationTokenSource();
         Application app = null;
         serviceBuilder.AddFactory<CancellationToken>(services =>
         {
-            return app!.cancelSource.Token;
+            return cts.Token;
         }, ServiceLifetime.Transient);
 
         serviceBuilder.AddFactory<IApplication>(services => app!, ServiceLifetime.Transient);
@@ -53,6 +54,7 @@ public class ApplicationBuilder
             throw new InvalidOperationException("No Application type configured.");
         
         app = applicationFactory(services);
+        app.cancelSource = cts;
         app.Services = services;
         services.Initialize();
         

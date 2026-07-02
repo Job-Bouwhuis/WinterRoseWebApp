@@ -64,7 +64,7 @@ internal sealed class NexusNewVersionListener(string appId) : IDisposable
                         if (rawPayload is not AppVersion appVersion)
                             continue;
 
-                        OnMessage?.Invoke(appVersion);
+                        OnMessage.Invoke(appVersion);
                     }
                     catch (Exception e)
                     {

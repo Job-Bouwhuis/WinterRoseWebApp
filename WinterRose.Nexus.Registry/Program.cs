@@ -10,6 +10,7 @@ using WinterRose.Nexus.Registry.Features.FileUploads.Services;
 using WinterRose.Web.Logging;
 using WinterRose.Web.Utils;
 using WinterRose.Nexus.Registry.Features;
+using WinterRose.Nexus.Shared;
 
 namespace WinterRose.Nexus.Registry;
 
@@ -58,7 +59,7 @@ internal class Program
 
         builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
         builder.Services.AddScoped<DashboardDataService>();
-        builder.Services.AddSingleton(typeof(IAsyncQueue<>), typeof(AsyncQueue<>));
+        builder.Services.AddSingleton(typeof(IAsyncEventQueue<>), typeof(AsyncEventQueue<>));
         builder.Services.AddSingleton<UploadService>();
 
         builder.Services.AddHostedService<DiffCreatorService>();
@@ -97,7 +98,7 @@ internal class Program
 
         app.Use(async (context, next) =>
         {
-            Console.WriteLine($"{context.Request.Method} {context.Request.Path}");
+            //Console.WriteLine($"{context.Request.Method} {context.Request.Path}");
             await next();
 
             if (context.Response.HasStarted)

@@ -1,11 +1,9 @@
-﻿using System.Threading.Channels;
-using WinterRose.Nexus.Registry.Features.FileUploads.Models;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Threading.Channels;
 
-namespace WinterRose.Nexus.Registry.Features.FileUploads.Services;
+namespace WinterRose.Nexus.Shared;
 
-public sealed class AsyncQueue<T> : IAsyncQueue<T>
+public sealed class AsyncEventQueue<T> : IAsyncEventQueue<T>
 {
     private readonly ConcurrentDictionary<Guid, Channel<T>> subscribers = new();
 

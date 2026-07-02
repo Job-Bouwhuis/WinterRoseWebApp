@@ -11,6 +11,24 @@
     padding: 0 1.5rem 4rem;
 }
 
+.sponsor-line {
+    text-align: center;
+    margin-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 0.75rem;
+    opacity: 0.55;
+}
+
+.sponsor-line a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.sponsor-line a:hover {
+    opacity: 0.85;
+}
+
 .nexus-page * {
     box-sizing: border-box;
 }

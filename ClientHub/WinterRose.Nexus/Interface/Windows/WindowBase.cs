@@ -11,7 +11,8 @@ public abstract class WindowBase : Form
     protected readonly IServiceProvider services;
 
     private IApplication? app;
-    
+    private bool initialized;
+
     public WindowBase(string title, MainThread main, IServiceProvider services)
     {
         Title = title;
@@ -19,8 +20,17 @@ public abstract class WindowBase : Form
         this.services = services;
     }
 
+    public void Hide()
+    {
+        Visible = false;
+    }
+    
     internal void InitializeWindow()
     {
+        if (initialized)
+            return;
+        initialized = true;
+        
         EnsureApp();
         Initialize();
         Content = BuildContent();

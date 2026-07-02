@@ -38,6 +38,13 @@ public class AppServerClient
             throw new ServerUnavailableException(ex);
         }
     }
+    
+    public async Task<AppEntry> GetAppEntryAsync(string appId)
+    {
+        return await httpClient
+            .GetFromWinterForge<AppEntry>($"apps/{appId}")
+            .ConfigureAwait(false);
+    }
 
     private async Task<Stream> GetStreamAsync(string url)
     {
