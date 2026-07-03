@@ -42,7 +42,7 @@ public sealed class AppDiffService : IDisposable
         DirectoryInfo to,
         CancellationToken cancellationToken = default)
     {
-        var key = new DiffKey(appName, from.Name, to.Name);
+        var key = new DiffKey(appName, from.Parent!.Name, to.Parent!.Name);
 
         return await diffCache.GetOrAddAsync(
             key,

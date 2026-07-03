@@ -8,7 +8,6 @@ using Eto.Forms;
 using WinterRose.Applications;
 using WinterRose.DependancyInjection.Logging;
 using WinterRose.Nexus.Exceptions;
-using WinterRose.Nexus.Models;
 using WinterRose.Nexus.Services;
 using WinterRose.Nexus.Shared;
 using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
@@ -407,7 +406,7 @@ public class ApplicationStoreWindow : WindowBase
             return;
 
 
-        var progressWindow = new InstallationProgressWindow(main, services);
+        var progressWindow = new InstallationProgressWindow(main, services, selectedApp.DisplayName);
         progressWindow.Show();
         progressWindow.ShowUpdating();
         

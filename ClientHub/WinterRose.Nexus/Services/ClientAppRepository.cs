@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using WinterRose.Nexus.Models;
 using WinterRose.Nexus.Shared;
 using WinterRose.WinterForgeSerializing;
-using LocalAppEntry = WinterRose.Nexus.Models.LocalAppEntry;
+using LocalAppEntry = WinterRose.Nexus.Shared.LocalAppEntry;
 
 namespace WinterRose.Nexus.Services;
 
@@ -56,12 +55,7 @@ public class ClientAppRepository
                 // rather than guessing at a version.
                 continue;
 
-            result.Add(new LocalAppEntry(
-                appId: details.AppId,
-                displayName: details.DisplayName,
-                installedVersion: details.InstalledVersion,
-                installPath: GetAppFilesPath(appId),
-                pinVersion: details.PinVersion));
+            result.Add(details);
         }
 
         return result;

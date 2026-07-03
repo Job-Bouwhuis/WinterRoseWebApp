@@ -1,6 +1,8 @@
 ﻿using System.Buffers;
+using System.Net;
 using WinterRose.Nexus.Shared;
 using WinterRose.WinterForgeSerializing;
+#pragma warning disable CA2024
 
 namespace WinterRose.Nexus.SDK;
 
@@ -27,15 +29,77 @@ internal sealed class NexusNewVersionListener(string appId) : IDisposable
         });
     }
 
+    private bool GetCurrentVersionTag(out string tag)
+    {
+       // DirectoryInfo dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+       DirectoryInfo dir =
+           new DirectoryInfo(
+               "D:\\GitRepositories\\Personal\\WinterRoseWebApp\\ClientHub\\WinterRose.Nexus\\bin\\Debug\\net10.0\\" +
+               "apps\\f2a32f4a9181ee3733b8c8353460ef6b057ea26a\\app");
+       
+        tag = "*";
+        while (dir.Name != "app")
+        {
+            dir = dir.Parent;
+            if (dir == null)
+                return false;
+        }
+
+        dir = dir.Parent;
+        if (dir == null)
+            return false;
+
+        FileInfo? appdetailsFile = dir.GetFiles(".localappdetails").FirstOrDefault();
+        if (appdetailsFile == null)
+            return false;
+
+        _ = typeof(LocalAppEntry);
+        object? res = WinterForge.DeserializeFromHumanReadableFile(appdetailsFile.FullName);
+        if(res is not LocalAppEntry entry)
+            return false;
+        
+        tag = entry.InstalledVersion.Tag;
+        if (string.IsNullOrWhiteSpace(tag))
+            tag = "release";
+        return true;
+    }
+
     private async Task ListenAsync()
     {
-        Console.WriteLine(appId);
-        using var response = await httpClient.GetAsync(
-            $"https://localhost:7184/versions/event/{appId}",
-            HttpCompletionOption.ResponseHeadersRead,
-            cts.Token);
+        if (!GetCurrentVersionTag(out string tag))
+        {
+            Console.Error.WriteLine("No version tag found, listening for all release branches!");
+        }
+        else
+        {
+            Console.WriteLine($"Listening for new versions on the {tag} branch!");
+        }
 
-        response.EnsureSuccessStatusCode();
+        HttpResponseMessage r;
+        try
+        {
+            r = await httpClient.GetAsync(
+                $"https://localhost:7184/versions/event/{appId}/{tag}",
+                HttpCompletionOption.ResponseHeadersRead,
+                cts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+        catch (HttpRequestException e)
+        {
+            Console.Error.WriteLine("Nexus Registry not available.");
+            return;
+        }
+
+        using var response = r;
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            Console.Error.WriteLine("Nexus Registry not available.");
+            return;
+        }
 
         await using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
         using var reader = new StreamReader(stream);
@@ -57,7 +121,7 @@ internal sealed class NexusNewVersionListener(string appId) : IDisposable
                 {
                     using MemoryStream mem = new MemoryStream(buffer.WrittenMemory.ToArray());
                     buffer.Clear();
-                    
+
                     try
                     {
                         object? rawPayload = WinterForge.DeserializeFromHumanReadableStream(mem);
@@ -66,8 +130,9 @@ internal sealed class NexusNewVersionListener(string appId) : IDisposable
 
                         OnMessage.Invoke(appVersion);
                     }
-                    catch (Exception e)
+                    catch
                     {
+                        // we swallow exceptions here. this is a background "nicity" an app can use, not a reliance
                     }
                 }
 

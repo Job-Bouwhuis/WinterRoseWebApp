@@ -6,6 +6,7 @@
     <UserSecretsId>aspnet-WinterRose.ClientHub-c7b80a6f-3e7c-4425-9bbd-776bf8e55d9a</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <OutputType>WinExe</OutputType>
+    <ApplicationIcon>Icons\NexusLogo-transparent.ico</ApplicationIcon>
     <!--<DockerfileContext>..\..</DockerfileContext>-->
   </PropertyGroup>
 
@@ -31,9 +32,22 @@
     <None Update="config\hub.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="SnowOwlLogo.jpg">
+    <None Update="Icons\NexusLogo.bmp">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Icons\NexusLogo-transparent.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Icons\NexusLogo-transparent.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Icons\NexusLogo-transparent.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\" />
   </ItemGroup>
 
 </Project>

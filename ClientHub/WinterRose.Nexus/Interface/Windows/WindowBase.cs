@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using Eto.Forms;
 using WinterRose.Applications;
@@ -10,6 +11,8 @@ public abstract class WindowBase : Form
     protected readonly MainThread main;
     protected readonly IServiceProvider services;
 
+    public event Action<WindowBase> OnHidden = delegate { };
+    
     private IApplication? app;
     private bool initialized;
 
@@ -23,6 +26,7 @@ public abstract class WindowBase : Form
     public void Hide()
     {
         Visible = false;
+        OnHidden.Invoke(this);
     }
     
     internal void InitializeWindow()
@@ -39,7 +43,8 @@ public abstract class WindowBase : Form
     protected override void OnClosing(CancelEventArgs e)
     {
         e.Cancel = true;
-        main.Invoke(() => Visible = false);
+        main.Invoke(Hide);
+        
         base.OnClosing(e);
     }
 

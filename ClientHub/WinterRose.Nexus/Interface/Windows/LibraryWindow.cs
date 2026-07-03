@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Eto.Drawing;
 using Eto.Forms;
+using Gtk;
 using WinterRose.DependancyInjection;
-using WinterRose.Nexus.Models;
 using WinterRose.Nexus.Services;
 using WinterRose.Nexus.Shared;
 using WinterRose.Shortcuts;
@@ -43,8 +44,6 @@ public class LibraryWindow(
     private readonly List<AppEntry> apps = new();
 
     private LocalAppEntry? selectedLocalApp;
-    private AppEntry? selectedServerApp;
-    private AppVersion? selectedVersion;
 
     private ListBox installedList;
     private ListBox recentList;
@@ -67,7 +66,7 @@ public class LibraryWindow(
         Width = 720;
         Height = 560;
         BackgroundColor = InstallationProgressWindow_BackgroundColorHack();
-
+        
         // ==========================================================
         // MENU
         // ==========================================================
@@ -89,11 +88,9 @@ public class LibraryWindow(
         };
 
         installMenu.Items.Add(fromStoreItem);
-        installMenu.Items.Add(fromSecretItem);
         menu.Items.Add(installMenu);
 
         fromStoreItem.Click += OnOpenStoreClicked;
-        fromSecretItem.Click += OnSecretKeyClicked;
 
         Menu = menu;
 
@@ -262,27 +259,35 @@ public class LibraryWindow(
     // returns the same background used by InstallationProgressWindow.
     private static Color InstallationProgressWindow_BackgroundColorHack() => BackgroundColor;
 
+    // NOTE: this now reads entirely from selectedLocalApp (LocalAppEntry).
+    // Publisher, Tags, LongDescription/ShortDescription are NOT currently
+    // present on LocalAppEntry - this assumes they exist as:
+    //   selectedLocalApp.Publisher            (string)
+    //   selectedLocalApp.Tags                 (ICollection<string> or similar)
+    //   selectedLocalApp.LongDescription      (string)
+    //   selectedLocalApp.ShortDescription     (string)
+    // Add these to LocalAppEntry, or adjust the property names below to match.
     private void UpdateSidebar()
     {
-        if (selectedLocalApp == null || selectedServerApp == null)
+        if (selectedLocalApp == null)
             return;
 
-        appTitle.Text = selectedServerApp.DisplayName;
+        appTitle.Text = selectedLocalApp.DisplayName ?? selectedLocalApp.AppId;
 
-        appPublisher.Text = $"by {selectedServerApp.Publisher}";
+        appPublisher.Text = $"by {selectedLocalApp.Publisher}";
 
         appVersion.Text =
             $"Installed: {selectedLocalApp.InstalledVersion.ToString(VersionStringFormat.HumanReadable)}"
             + (selectedLocalApp.PinVersion ? " (Pinned)" : "");
 
-        appTags.Text = selectedServerApp.Tags != null && selectedServerApp.Tags.Count > 0
-            ? string.Join(" • ", selectedServerApp.Tags)
+        appTags.Text = selectedLocalApp.Tags.Length > 0
+            ? string.Join(" • ", selectedLocalApp.Tags)
             : "";
 
         appDetails.Text =
-            !string.IsNullOrWhiteSpace(selectedServerApp.LongDescription)
-                ? selectedServerApp.LongDescription
-                : selectedServerApp.ShortDescription;
+            !string.IsNullOrWhiteSpace(selectedLocalApp.LongDescription)
+                ? selectedLocalApp.LongDescription
+                : selectedLocalApp.ShortDescription;
     }
 
     Control CreateDivider()
@@ -320,7 +325,8 @@ public class LibraryWindow(
             recentList.Items.Add(app.DisplayName ?? app.AppId);
     }
 
-    private async Task RefreshLibrary()
+    // No longer touches the server - purely local refresh now.
+    private void RefreshLibrary()
     {
         installedApps = appRepo.GetInstalledApps();
         PopulateLists();
@@ -338,24 +344,22 @@ public class LibraryWindow(
         }
 
         selectedLocalApp = stillInstalled;
-        selectedServerApp = await server.GetAppEntryAsync(stillInstalled.AppId);
 
         UpdateSidebar();
     }
 
-    private async void OnInstalledSelected(object? sender, EventArgs e)
+    private void OnInstalledSelected(object? sender, EventArgs e)
     {
         if (installedList.SelectedIndex < 0 || installedList.SelectedIndex >= installedApps.Count)
             return;
 
         selectedLocalApp = installedApps[installedList.SelectedIndex];
-        selectedServerApp = await server.GetAppEntryAsync(selectedLocalApp.AppId);
 
         ShowSidebar();
         UpdateSidebar();
     }
 
-    private async void OnRecentSelected(object? sender, EventArgs e)
+    private void OnRecentSelected(object? sender, EventArgs e)
     {
         if (recentList.SelectedIndex < 0)
             return;
@@ -367,7 +371,6 @@ public class LibraryWindow(
             .ToList();
 
         selectedLocalApp = recent[recentList.SelectedIndex];
-        selectedServerApp = await server.GetAppEntryAsync(selectedLocalApp.AppId);
 
         ShowSidebar();
         UpdateSidebar();
@@ -394,7 +397,7 @@ public class LibraryWindow(
     }
 
     // ==========================================================
-    // UTILITY DIALOG (versions + shortcuts)
+    // UTILITY DIALOG (versions + shortcuts + browse local files)
     // ==========================================================
     private async void OnUtilityClicked(object? sender, EventArgs e)
     {
@@ -405,7 +408,7 @@ public class LibraryWindow(
         {
             Title = $"Manage {selectedLocalApp.DisplayName ?? selectedLocalApp.AppId}",
             Width = 340,
-            Height = 260,
+            Height = 320,
             BackgroundColor = BackgroundColor
         };
 
@@ -455,10 +458,15 @@ public class LibraryWindow(
         {
             try
             {
+                string targetPath = Path.Combine(selectedLocalApp.InstallPath, selectedLocalApp.InstalledVersion.LaunchTarget.Path);
+                string icoPath = AppIconExtractor.GetIconPath(targetPath);
+                if(string.IsNullOrWhiteSpace(icoPath))
+                    icoPath = AppIconExtractor.GetIconPath(Environment.ProcessPath);
+                
                 ShortcutMaker.CreateUriShortcut(
                     shortcutPath,
                     $"winterrose://update-application?id={selectedLocalApp.AppId}&auto-start=true",
-                    selectedLocalApp.InstallPath);
+                    icoPath);
 
                 createShortcutButton.Enabled = false;
                 removeShortcutButton.Enabled = true;
@@ -492,6 +500,27 @@ public class LibraryWindow(
                 Rows = { new TableRow(createShortcutButton, removeShortcutButton) }
             }));
 
+        layout.Rows.Add(new TableRow(new Label
+        {
+            Text = "Files",
+            Font = new Font(SystemFont.Bold, 10),
+            TextColor = TextPrimary
+        }));
+
+        var browseLocalFilesButton = new Button { Text = "Browse local files" };
+        browseLocalFilesButton.Click += (s, e2) =>
+        {
+            try
+            {
+                OpenInFileExplorer(selectedLocalApp.InstallPath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(dialog, ex.Message, MessageBoxType.Error);
+            }
+        };
+        layout.Rows.Add(new TableRow(browseLocalFilesButton));
+
         layout.Rows.Add(null); // spacer
 
         var closeButton = new Button { Text = "Close" };
@@ -500,6 +529,44 @@ public class LibraryWindow(
 
         dialog.Content = layout;
         dialog.ShowModal(this);
+    }
+
+    private static void OpenInFileExplorer(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            throw new DirectoryNotFoundException($"Application folder not found: {path}");
+
+        if (OperatingSystem.IsWindows())
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"\"{path}\"",
+                UseShellExecute = true
+            });
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "xdg-open",
+                Arguments = $"\"{path}\"",
+                UseShellExecute = false
+            });
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "open",
+                Arguments = $"\"{path}\"",
+                UseShellExecute = false
+            });
+        }
+        else
+        {
+            throw new PlatformNotSupportedException("Cannot browse local files on this platform.");
+        }
     }
 
     private string GetShortcutPath(LocalAppEntry app)
@@ -516,6 +583,9 @@ public class LibraryWindow(
 
     // ==========================================================
     // VERSION SWITCHING (store-style sidebar in a dialog)
+    // This is the ONLY place that still needs the real AppEntry
+    // from the server, since branch/version/changelog data isn't
+    // (and shouldn't be) cached locally.
     // ==========================================================
     private async Task OnVersionsClicked(object? sender, EventArgs e)
     {
@@ -732,61 +802,14 @@ public class LibraryWindow(
     {
         storeWindow.InitializeWindow();
 
-        storeWindow.Closed += OnStoreWindowClosed;
+        storeWindow.OnHidden += OnStoreWindowClosed;
         storeWindow.Show();
     }
 
-    private void OnStoreWindowClosed(object? sender, EventArgs e)
+    private void OnStoreWindowClosed(WindowBase window)
     {
-        storeWindow.Closed -= OnStoreWindowClosed;
+        storeWindow.OnHidden -= OnStoreWindowClosed;
         RefreshLibrary();
-    }
-
-    private async void OnSecretKeyClicked(object? sender, EventArgs e)
-    {
-        var dialog = new Dialog<string>
-        {
-            Width = 350,
-            Height = 250,
-            BackgroundColor = BackgroundColor
-        };
-
-        var textBox = new TextBox
-        {
-            PlaceholderText = "xxxxxxxxxxx-abc-00000"
-        };
-
-        dialog.Content = new TableLayout(
-            new Label { Text = "Enter Secret Key / App Id", TextColor = TextPrimary },
-            new TableRow(textBox),
-            new TableRow(
-                new Button
-                {
-                    Text = "Lookup",
-                    Command = new Command((s, e2) => { dialog.Close(textBox.Text); })
-                }
-            )
-        );
-
-        string? appId = dialog.ShowModal(this);
-
-        if (string.IsNullOrWhiteSpace(appId))
-            return;
-
-        try
-        {
-            selectedServerApp = await server.GetAppEntryAsync(appId);
-
-            selectedLocalApp = installedApps
-                .FirstOrDefault(x => x.AppId == appId);
-
-            ShowSidebar();
-            UpdateSidebar();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, MessageBoxType.Error);
-        }
     }
 
     private void ShowSidebar() => sidebar.Visible = true;
@@ -795,6 +818,5 @@ public class LibraryWindow(
     {
         sidebar.Visible = false;
         selectedLocalApp = null;
-        selectedServerApp = null;
     }
 }

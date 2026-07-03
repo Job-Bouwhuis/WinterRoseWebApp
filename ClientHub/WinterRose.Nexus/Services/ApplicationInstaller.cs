@@ -3,7 +3,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
 using WinterRose.Diff;
-using WinterRose.Nexus.Models;
 using WinterRose.Nexus.Shared;
 using WinterRose.ProgressKeeping;
 
@@ -63,7 +62,16 @@ public class ApplicationInstaller
 
         finalizeScope.Report(0.7, "Writing app details");
 
-        var details = new LocalAppEntry(appId, entry.DisplayName, version, targetPath, pinVersion);
+        var details = new LocalAppEntry(
+            appId, 
+            entry.DisplayName,
+            version, targetPath,
+            entry.Publisher, 
+            entry.Tags.ToArray(),
+            entry.LongDescription,
+            entry.ShortDescription,
+            pinVersion);
+        
         repository.SaveLocalAppDetails(details);
 
         finalizeScope.Report(1.0, "Install complete");
@@ -184,7 +192,7 @@ public class ApplicationInstaller
 
     public async Task UninstallApplicationAsync(string appId)
     {
-        DirectoryInfo installDir = new DirectoryInfo(GetAppFilesPath(appId));
+        DirectoryInfo installDir = new DirectoryInfo(GetAppRoot(appId));
         if (!installDir.Exists)
             throw new DirectoryNotFoundException("App not installed");
 

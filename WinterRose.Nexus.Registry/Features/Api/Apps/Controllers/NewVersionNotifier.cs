@@ -12,8 +12,8 @@ namespace WinterRose.Nexus.Registry.Features.Api.Apps.Controllers;
 [Route("versions/event")]
 public sealed class NewVersionNotifier(IAsyncEventQueue<UploadCompletedEvent> eventQueue, ILogger<NewVersionNotifier> logger) : ControllerBase
 {
-    [HttpGet("{appId}")]
-    public async Task Get(string appId)
+    [HttpGet("{appId}/{tag}")]
+    public async Task Get(string appId, string tag, CancellationToken ct)
     {
         Response.Headers.ContentType = "text/event-stream";
 
@@ -21,8 +21,10 @@ public sealed class NewVersionNotifier(IAsyncEventQueue<UploadCompletedEvent> ev
 
         await eventQueue.SubscribeAsync(async (ev, token) =>
         {
-            logger.LogInformation("A new version notification received for app {AppId} version {Version}", ev.BasePath, ev.AppVersion.ToString());
             if (ev.Name != appId)
+                return;
+
+            if (tag != "*" && ev.AppVersion.Tag != tag)
                 return;
 
             try
@@ -38,6 +40,6 @@ public sealed class NewVersionNotifier(IAsyncEventQueue<UploadCompletedEvent> ev
             {
                 logger.LogError(e, "failed to serialize event");
             }
-        }, CancellationToken.None);
+        }, ct);
     }
 }

@@ -14,7 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\WinterRose.WinterForge\src\WinterRose.WinterForge\WinterRose.WinterForge.csproj" />
     <ProjectReference Include="..\HBOICT_Corp.Validation.Abstractions\WinterRose.Web.Validation.Abstractions.csproj" />
-    <ProjectReference Include="..\TypedIds\WinterRose.TypedIds.Generator\WinterRose.TypedIds.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" IncludeAssets="analyzers" />
   </ItemGroup>
 
 </Project>

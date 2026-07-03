@@ -39,12 +39,10 @@ public class UploadService(IAsyncEventQueue<UploadCompletedEvent> asyncEventQueu
         
         if (string.IsNullOrWhiteSpace(appEntry.AppId))
             throw new InvalidOperationException("App Name is required.");
-
-        var appId = GenerateAppId(appEntry.AppId);
         
         var safeVersion = version.ToString(VersionStringFormat.FolderSafe);
 
-        var appRoot = Path.Combine(uploadsFolder.FullName, appId);
+        var appRoot = Path.Combine(uploadsFolder.FullName, appEntry.AppId);
         var versionsRoot = Path.Combine(appRoot, "versions");
         var versionPath = Path.Combine(versionsRoot, safeVersion);
 
@@ -54,7 +52,6 @@ public class UploadService(IAsyncEventQueue<UploadCompletedEvent> asyncEventQueu
         // Write app metadata (.appdetails)
         // ----------------------------
         
-        appEntry.AppId = appId;
         WriteAppDetails(appRoot, appEntry);
 
         // ----------------------------
@@ -93,7 +90,7 @@ public class UploadService(IAsyncEventQueue<UploadCompletedEvent> asyncEventQueu
             versionPath,
             version);
 
-        asyncEventQueue.Publish(new UploadCompletedEvent(appId, appRoot, version));
+        asyncEventQueue.Publish(new UploadCompletedEvent(appEntry.AppId, appRoot, version));
     }
     
     private void WriteAppDetails(string appRoot, AppEntry incoming)
@@ -159,7 +156,7 @@ public class UploadService(IAsyncEventQueue<UploadCompletedEvent> asyncEventQueu
         return set.ToList();
     }
     
-    private string GenerateAppId(string appName)
+    public string GenerateAppId(string appName)
     {
         var normalized = Sanitize(appName).Trim().ToLowerInvariant();
 

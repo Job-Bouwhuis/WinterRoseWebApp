@@ -65,7 +65,11 @@ internal class UriListener
 {
     public Action<UriContext> OnUri { get; set; }
     
-    public UriListener(IServiceProvider services, IUriBootstrapListener listener, CancellationToken ct, ILogger<UriListener> logger)
+    public UriListener(
+        IServiceProvider services,
+        IUriBootstrapListener listener, 
+        CancellationToken ct,
+        ILogger<UriListener> logger)
     {
         var handlers = services.ResolveAll<IUriHandler>().ToArray();
         
@@ -74,12 +78,20 @@ internal class UriListener
         
         listener.StartListening(async uri =>
         {
+            logger.Info($"Uri: {uri}");
             var ctx = UriContextParser.Parse(uri);
             
             foreach (var handler in handlers)
             {
-                if(handler.CanHandle(ctx))
-                    await handler.HandleAsync(ctx);
+                try
+                {
+                    if (handler.CanHandle(ctx))
+                        await handler.HandleAsync(ctx);
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e, "Error while handling uri {uri}");
+                }
             }
         }, ct);
     }

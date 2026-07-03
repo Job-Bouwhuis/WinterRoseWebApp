@@ -56,9 +56,12 @@ public class Nexus(string appId) : IDisposable
         try
         {
             if (!args.Contains(NEXUS_APPROVED_ARG))
-                UriSchemeInvoker.Open($"{NEXUS_URI_BASE}{UPDATE_APPLICATION_COMMAND}?id={appId}");
-
-            Environment.Exit(0);
+            {
+                UriSchemeInvoker.Open($"{NEXUS_URI_BASE}{UPDATE_APPLICATION_COMMAND}?id={appId}&auto-start=true");
+                Console.WriteLine("Terminating application...");
+                Console.ReadKey();
+                Environment.Exit(0);
+            }
         }
         catch (Exception e)
         {

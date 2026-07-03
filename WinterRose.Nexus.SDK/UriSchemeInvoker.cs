@@ -35,6 +35,8 @@ public static class UriSchemeInvoker
 
             if (process is not null)
                 return;
+            
+            process.WaitForExit();
         }
         catch (Exception ex)
         {

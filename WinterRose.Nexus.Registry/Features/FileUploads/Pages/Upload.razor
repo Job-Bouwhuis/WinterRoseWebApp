@@ -56,8 +56,18 @@
             <div class="form-group">
                 <h3 class="form-section-title">Detected Application Info</h3>
 
-                <TextInput Label="Internal Name" @bind-Value="name" />
+                <TextInput Label="Internal Name" @bind-Value="name" @bind-Value:after="OnNameChanged" />
                 <small class="nx-input-helper">Suggested: @suggestedName</small>
+                <small class="nx-input-helper">App ID: <code>@appIdPreview</code></small>
+
+                @if (isCheckingNameAvailability)
+                {
+                    <small class="nx-input-helper text-muted">Checking availability...</small>
+                }
+                else if (!isNameAvailable)
+                {
+                    <small class="nx-input-helper text-danger">@NameError</small>
+                }
 
                 <div class="form-group">
                     <label class="nx-input-label">Version</label>
@@ -150,6 +160,9 @@
     private string[]? relativePaths;
 
     private UploadResult? result;
+    private string appIdPreview = "";
+    private bool isNameAvailable = true;
+    private bool isCheckingNameAvailability = false;
 
     private string launchTarget = "";
     private List<string> launchTargetOptions = new();
@@ -166,7 +179,11 @@
     private bool CanUpload =>
         files is not null &&
         !string.IsNullOrWhiteSpace(name) &&
-        !string.IsNullOrWhiteSpace(version);
+        !string.IsNullOrWhiteSpace(version) &&
+        isNameAvailable &&
+        !isCheckingNameAvailability;
+
+    public string NameError { get; set; }
 
     private async Task TriggerFilePicker()
     {
@@ -187,6 +204,7 @@
         
         suggestedName = SuggestNameFromFiles(relativePaths.ToList());
         name = suggestedName;
+        OnNameChanged();
 
         suggestedVersion = GuessVersionFromFiles(files);
         ApplySuggestedVersion(suggestedVersion);
@@ -298,6 +316,50 @@
 
         return match.Success ? match.Value : "1.0.0";
     }
+    
+    private async Task OnNameChanged()
+    {
+        appIdPreview = UploadService.GenerateAppId(name);
+        await CheckNameAvailabilityAsync();
+    }
+
+    private async Task CheckNameAvailabilityAsync()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                isNameAvailable = false;
+                NameError = "Name cannot be empty.";
+                return;
+            }
+
+            isCheckingNameAvailability = true;
+            StateHasChanged();
+
+            // TODO: replace with a real UploadService.IsAppIdAvailableAsync(appIdPreview) call
+            // once duplicate-name checking is implemented server-side.
+            isNameAvailable = await IsNameAvailableAsync(appIdPreview);
+            if (!isNameAvailable)
+                NameError = "This name is already in use. Please choose another.";
+
+            isCheckingNameAvailability = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            NameError = ex.Message;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<bool> IsNameAvailableAsync(string appId)
+    {
+        // Stub: always valid for now. Swap this out for a real UploadService lookup
+        // (e.g. UploadService.IsAppIdAvailableAsync(appId)) once duplicate checking exists.
+        await Task.Delay(250);
+        return true;
+    }
 
     private async Task CommitUpload()
     {
@@ -312,8 +374,8 @@
 
         var appEntry = new AppEntry
         {
-            AppId = name,
-            DisplayName = string.IsNullOrWhiteSpace(name) ? suggestedName : name,
+            AppId = UploadService.GenerateAppId(name),
+            DisplayName = name,
             Publisher = publisher,
             ShortDescription = shortDescription,
             LongDescription = longDescription,

@@ -67,6 +67,10 @@ public class AppTray(UiManager ui, IApplication app)
         });
         
         tray.Menu = menu;
+        tray.Activated += (s, e) =>
+        {
+            ui.Show<LibraryWindow>();
+        };
         tray.Visible = true;
 
         isInitialized = true;
