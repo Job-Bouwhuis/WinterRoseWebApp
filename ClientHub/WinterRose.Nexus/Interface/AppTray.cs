@@ -1,6 +1,8 @@
 ﻿using Eto.Drawing;
 using Eto.Forms;
 using WinterRose.Applications;
+using WinterRose.FuzzySearching;
+using WinterRose.Nexus.Interface.Preferences;
 using WinterRose.Nexus.Interface.Windows;
 
 namespace WinterRose.Nexus.Interface;
@@ -57,6 +59,15 @@ public class AppTray(UiManager ui, IApplication app)
             })
         });
         
+        menu.Items.Add(new ButtonMenuItem
+        {
+            Text = "Preferences",
+            Command = new Command((s, e) =>
+            {
+                ui.Show<UserPreferencesWindow>();
+            })
+        });
+
         menu.Items.Add(new ButtonMenuItem
         {
             Text = "Close Nexus",

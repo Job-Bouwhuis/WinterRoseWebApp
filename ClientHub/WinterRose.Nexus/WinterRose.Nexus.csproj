@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\WinterRose-Development\WinterRose.Diff\WinterRose.Diff.csproj" />
+    <ProjectReference Include="..\..\..\WinterRose-Development\WinterRose.FuzzySearching\WinterRose.FuzzySearching.csproj" />
     <ProjectReference Include="..\..\..\WinterRose.WinterForge\src\WinterRose.WinterForge\WinterRose.WinterForge.csproj" />
     <ProjectReference Include="..\..\Utils\WinterRose.Applications\WinterRose.Applications.csproj" />
     <ProjectReference Include="..\..\Utils\WinterRose.Configuration\WinterRose.Configuration.csproj" />

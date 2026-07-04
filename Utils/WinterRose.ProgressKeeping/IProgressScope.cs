@@ -2,6 +2,6 @@ namespace WinterRose.ProgressKeeping;
 
 public interface IProgressScope
 {
-    void Report(double value, string? message = null);
+    Task ReportAsync(double value, string? message, ReportStatus status);
     IProgressScope CreateChild(double weight = 1.0);
 }

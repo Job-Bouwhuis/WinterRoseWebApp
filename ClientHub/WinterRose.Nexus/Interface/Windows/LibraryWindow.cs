@@ -8,8 +8,10 @@ using Eto.Drawing;
 using Eto.Forms;
 using Gtk;
 using WinterRose.DependancyInjection;
+using WinterRose.Nexus.Interface.Preferences;
 using WinterRose.Nexus.Services;
 using WinterRose.Nexus.Shared;
+using WinterRose.ProgressKeeping;
 using WinterRose.Shortcuts;
 using Button = Eto.Forms.Button;
 using ComboBox = Eto.Forms.ComboBox;
@@ -28,17 +30,11 @@ public class LibraryWindow(
     AppServerClient server,
     ApplicationInstaller installer,
     ApplicationStarter appStarter,
-    [Specifically<ApplicationStoreWindow>] WindowBase storeWindow)
+    [Specifically<ApplicationStoreWindow>] WindowBase storeWindow,
+    [Specifically<UserPreferencesWindow>] WindowBase preferencesWindow)
     : WindowBase("Nexus Library", mainThread, services)
 {
     // Palette (shared visual language with InstallationProgressWindow)
-    private static Color BackgroundColor = Color.FromArgb(24, 26, 31);
-    private static readonly Color PanelColor = Color.FromArgb(32, 35, 41);
-    private static readonly Color PanelColorAlt = Color.FromArgb(28, 30, 36);
-    private static readonly Color BorderColor = Color.FromArgb(48, 51, 58);
-    private static readonly Color TextPrimary = Color.FromArgb(235, 236, 238);
-    private static readonly Color TextMuted = Color.FromArgb(150, 154, 162);
-    private static readonly Color AccentColor = Color.FromArgb(88, 145, 255);
 
     private List<LocalAppEntry> installedApps = new();
     private readonly List<AppEntry> apps = new();
@@ -65,7 +61,6 @@ public class LibraryWindow(
     {
         Width = 720;
         Height = 560;
-        BackgroundColor = InstallationProgressWindow_BackgroundColorHack();
         
         // ==========================================================
         // MENU
@@ -82,13 +77,21 @@ public class LibraryWindow(
             Text = "From store"
         };
 
-        var fromSecretItem = new ButtonMenuItem
-        {
-            Text = "From secret key"
-        };
-
         installMenu.Items.Add(fromStoreItem);
         menu.Items.Add(installMenu);
+
+        var preferencesMenu = new ButtonMenuItem
+        {
+            Text = "Preferences"
+        };
+        
+        preferencesMenu.Click += (sender, args) =>
+        {
+            preferencesWindow.InitializeWindow();
+            preferencesWindow.Show();
+        };
+        
+        menu.Items.Add(preferencesMenu);
 
         fromStoreItem.Click += OnOpenStoreClicked;
 
@@ -97,18 +100,12 @@ public class LibraryWindow(
         // ==========================================================
         // LEFT SIDE
         // ==========================================================
-        installedList = new ListBox
-        {
-            BackgroundColor = PanelColor,
-            TextColor = TextPrimary
-        };
+        installedList = new ListBox();
         installedList.SelectedIndexChanged += OnInstalledSelected;
 
         recentList = new ListBox
         {
-            Height = 110,
-            BackgroundColor = PanelColor,
-            TextColor = TextPrimary
+            Height = 110
         };
 
         recentList.SelectedIndexChanged += OnRecentSelected;
@@ -116,7 +113,8 @@ public class LibraryWindow(
         var leftPanel = new TableLayout
         {
             Padding = new Padding(16),
-            Spacing = new Size(0, 10)
+            Spacing = new Size(0, 10),
+            Style = "muted"
         };
 
         leftPanel.Rows.Add(new TableRow(
@@ -124,7 +122,7 @@ public class LibraryWindow(
             {
                 Text = "INSTALLED APPS",
                 Font = new Font(SystemFont.Bold, 9),
-                TextColor = TextMuted
+                Style = "muted"
             }));
 
         leftPanel.Rows.Add(new TableRow(installedList)
@@ -137,7 +135,7 @@ public class LibraryWindow(
             {
                 Text = "RECENTLY STARTED",
                 Font = new Font(SystemFont.Bold, 9),
-                TextColor = TextMuted
+                Style = "muted"
             }));
 
         leftPanel.Rows.Add(new TableRow(recentList));
@@ -155,36 +153,34 @@ public class LibraryWindow(
         {
             Width = 360,
             Visible = false,
-            BackgroundColor = PanelColorAlt
+            Style = "card-elevated"
         };
 
         appTitle = new Label
         {
             Font = new Font(SystemFont.Bold, 16),
-            TextColor = TextPrimary
+            Style = "accent"
         };
 
         appPublisher = new Label
         {
-            TextColor = TextMuted
+            Style = "muted"
         };
 
         appTags = new Label
         {
-            TextColor = TextMuted
+            Style = "muted"
         };
 
         appVersion = new Label
         {
-            TextColor = AccentColor
+            Style = "accent"
         };
 
         appDetails = new TextArea
         {
             ReadOnly = true,
-            Wrap = true,
-            BackgroundColor = PanelColorAlt,
-            TextColor = TextPrimary
+            Wrap = true
         };
 
         launchButton = new Button
@@ -215,7 +211,8 @@ public class LibraryWindow(
         var sidebarLayout = new TableLayout
         {
             Padding = new Padding(18),
-            Spacing = new Size(0, 8)
+            Spacing = new Size(0, 8),
+            Style = "accent"
         };
 
         sidebarLayout.Rows.Add(new TableRow(appTitle));
@@ -255,10 +252,6 @@ public class LibraryWindow(
         return content;
     }
 
-    // Small helper kept local so BuildContent above reads cleanly;
-    // returns the same background used by InstallationProgressWindow.
-    private static Color InstallationProgressWindow_BackgroundColorHack() => BackgroundColor;
-
     // NOTE: this now reads entirely from selectedLocalApp (LocalAppEntry).
     // Publisher, Tags, LongDescription/ShortDescription are NOT currently
     // present on LocalAppEntry - this assumes they exist as:
@@ -294,7 +287,7 @@ public class LibraryWindow(
     {
         return new Panel
         {
-            BackgroundColor = BorderColor,
+            BackgroundColor = ThemeManager.NexusPalette.BORDER,
             Height = 1
         };
     }
@@ -302,9 +295,7 @@ public class LibraryWindow(
     protected override void OnShown(EventArgs e)
     {
         base.OnShown(e);
-
-        installedApps = appRepo.GetInstalledApps();
-        PopulateLists();
+        RefreshLibrary();
     }
 
     private void PopulateLists()
@@ -386,7 +377,6 @@ public class LibraryWindow(
         {
             await appStarter.Start(selectedLocalApp.AppId, true);
             selectedLocalApp.LastStartedAt = DateTime.UtcNow;
-            installedApps = appRepo.GetInstalledApps();
 
             RefreshLibrary();
         }
@@ -421,8 +411,7 @@ public class LibraryWindow(
         layout.Rows.Add(new TableRow(new Label
         {
             Text = "Versions",
-            Font = new Font(SystemFont.Bold, 10),
-            TextColor = TextPrimary
+            Font = new Font(SystemFont.Bold, 10)
         }));
 
         var changeVersionButton = new Button { Text = "Change version..." };
@@ -436,8 +425,7 @@ public class LibraryWindow(
         layout.Rows.Add(new TableRow(new Label
         {
             Text = "Desktop Shortcut",
-            Font = new Font(SystemFont.Bold, 10),
-            TextColor = TextPrimary
+            Font = new Font(SystemFont.Bold, 10)
         }));
 
         string shortcutPath = GetShortcutPath(selectedLocalApp);
@@ -503,8 +491,7 @@ public class LibraryWindow(
         layout.Rows.Add(new TableRow(new Label
         {
             Text = "Files",
-            Font = new Font(SystemFont.Bold, 10),
-            TextColor = TextPrimary
+            Font = new Font(SystemFont.Bold, 10)
         }));
 
         var browseLocalFilesButton = new Button { Text = "Browse local files" };
@@ -612,15 +599,14 @@ public class LibraryWindow(
         {
             Text = app.DisplayName,
             Font = new Font(SystemFont.Bold, 12),
-            TextAlignment = TextAlignment.Left,
-            TextColor = TextPrimary
+            TextAlignment = TextAlignment.Left
         };
         layout.Rows.Add(new TableRow(titleLabel));
 
         var publisherLabel = new Label
         {
             Text = app.Publisher ?? "",
-            TextColor = TextMuted,
+            Style = "muted",
             TextAlignment = TextAlignment.Left
         };
         layout.Rows.Add(new TableRow(publisherLabel));
@@ -628,8 +614,7 @@ public class LibraryWindow(
         layout.Rows.Add(new TableRow(new Label
         {
             Text = "Branch",
-            TextAlignment = TextAlignment.Left,
-            TextColor = TextPrimary
+            TextAlignment = TextAlignment.Left
         }));
 
         var branches = app.Versions
@@ -647,16 +632,11 @@ public class LibraryWindow(
         layout.Rows.Add(new TableRow(new Label
         {
             Text = "Versions",
-            TextAlignment = TextAlignment.Left,
-            TextColor = TextPrimary
+            TextAlignment = TextAlignment.Left
         }));
 
         var versionScroll = new Scrollable { Border = BorderType.Line };
-        var versionList = new ListBox
-        {
-            BackgroundColor = PanelColor,
-            TextColor = TextPrimary
-        };
+        var versionList = new ListBox();
         versionScroll.Content = versionList;
         layout.Rows.Add(new TableRow(versionScroll) { ScaleHeight = true });
 
@@ -664,9 +644,7 @@ public class LibraryWindow(
         {
             ReadOnly = true,
             Wrap = true,
-            Height = 90,
-            BackgroundColor = PanelColor,
-            TextColor = TextPrimary
+            Height = 90
         };
         layout.Rows.Add(new TableRow(versionDetailsText));
 
@@ -776,7 +754,7 @@ public class LibraryWindow(
 
         RefreshLibrary();
 
-        progress.Report(1.0, "Done");
+        await progress.ReportAsync(1.0, "Done", ReportStatus.Success);
     }
 
     private bool IsLatestInBranch(string appId, AppVersion version)

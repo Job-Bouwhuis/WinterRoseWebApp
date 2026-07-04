@@ -10,6 +10,7 @@
     <Project Path="../WinterRose-Development/WinterRose.Diff/WinterRose.Diff.csproj" />
   </Folder>
   <Folder Name="/Utils/">
+    <Project Path="../WinterRose-Development/WinterRose.FuzzySearching/WinterRose.FuzzySearching.csproj" />
     <Project Path="../WinterRose-Development/WinterRose.Recordium/WinterRose.Recordium.csproj" />
     <Project Path="../WinterRose-Development/WinterRose.Shortcuts/WinterRose.Shortcuts.csproj" />
     <Project Path="ClientHub/Utils/HBOICT_Corp.Problems/WinterRose.Web.Problems.csproj" />

@@ -11,7 +11,8 @@ public class Config
     public Config(string configPath, bool autoLoad = true)
     {
         this.configPath = configPath;
-        LoadConfig();
+        if(autoLoad)
+            LoadConfig();
     }
 
     public object this[string key]
@@ -30,7 +31,9 @@ public class Config
     {
         if (File.Exists(configPath))
         {
-            object result = WinterForge.DeserializeFromHumanReadableFile(configPath);
+            using FileStream file = new(configPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            
+            object result = WinterForge.DeserializeFromHumanReadableStream(file);
             if (result is Anonymous a)
             {
                 config = a;

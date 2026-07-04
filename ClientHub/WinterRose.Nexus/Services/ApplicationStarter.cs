@@ -71,17 +71,13 @@ public class ApplicationStarter(ApplicationInstaller installer,
         
         if (!skipVersionCheck)
         {
-            latestVersion = serverEntry.Versions.GetLatest(localEntry?.InstalledVersion.Tag ?? "")!;
+            latestVersion = serverEntry!.Versions.GetLatest(localEntry?.InstalledVersion.Tag ?? "")!;
            
-            if (localEntry.InstalledVersion < latestVersion)
+            if (localEntry!.InstalledVersion < latestVersion)
             {
-                window.ShowUpdating();
-
+                await main.InvokeAsync(window.ShowUpdating);
                 var scope = window.CreateUiScope();
-
                 await installer.PatchApplicationAsync(appId, latestVersion, scope);
-
-                scope.Report(1.0, "Updated");
             }
         }
         else
@@ -110,22 +106,25 @@ public class ApplicationStarter(ApplicationInstaller installer,
                 var scope = await main.InvokeAsync(window.CreateUiScope);
 
                 await installer.InstallFromArchiveAsync(appId, latestVersion, scope);
-
-                scope.Report(1.0, "Installed");
             }
         }
-        
-        // let UI transition to "Starting"
-        await main.InvokeAsync(window.ShowNoUpdates);
-        
-        try
+
+        if (startAfterUpdate)
         {
-            appLauncher.LaunchApplication(appId, latestVersion.LaunchTarget, NEXUS_APPROVED_ARG);
+            try
+            {
+                await main.InvokeAsync(window.ShowStartingApp);
+                appLauncher.LaunchApplication(appId, latestVersion.LaunchTarget, NEXUS_APPROVED_ARG);
+            }
+            catch (Exception e)
+            {
+                _ = dialog.ShowAsync($"Application could not be started: {e.GetType().Name}");
+                logger.Error(e, "Application could not be started");
+            }
         }
-        catch (Exception e)
+        else
         {
-            _ = dialog.ShowAsync($"Application could not be started: {e.GetType().Name}");
-            logger.Error(e, "Application could not be started");
+            await main.InvokeAsync(window.ShowUpdateComplete);
         }
     }
 }

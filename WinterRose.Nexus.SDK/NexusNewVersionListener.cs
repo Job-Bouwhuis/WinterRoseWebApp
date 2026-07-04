@@ -31,11 +31,7 @@ internal sealed class NexusNewVersionListener(string appId) : IDisposable
 
     private bool GetCurrentVersionTag(out string tag)
     {
-       // DirectoryInfo dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-       DirectoryInfo dir =
-           new DirectoryInfo(
-               "D:\\GitRepositories\\Personal\\WinterRoseWebApp\\ClientHub\\WinterRose.Nexus\\bin\\Debug\\net10.0\\" +
-               "apps\\f2a32f4a9181ee3733b8c8353460ef6b057ea26a\\app");
+        DirectoryInfo dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
        
         tag = "*";
         while (dir.Name != "app")

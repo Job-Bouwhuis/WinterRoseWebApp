@@ -16,6 +16,6 @@ public class ApplicationUpdateUriHandler(ApplicationStarter installer) : IUriHan
     {
         string? appId = context.Query["id"];
 
-        installer.Start(appId, context.Query["auto-launch"] == "true");
+        installer.Start(appId, context.Query["auto-start"] == "true");
     }
 }

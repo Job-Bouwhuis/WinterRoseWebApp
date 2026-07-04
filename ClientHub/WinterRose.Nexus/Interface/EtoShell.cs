@@ -25,8 +25,36 @@ public class EtoShell
         Eto.GtkSharp.Platform p = new();
         etoApp = new EtoApplication(p);
 
-        if (OperatingSystem.IsWindows())
-             ThemeManager.ApplyNexusTheme();
+        ThemeManager.ApplyNexusTheme();
+        RegisterLogStyles();
+    }
+    
+    private static void RegisterLogStyles()
+    {
+        Style.Add<Label>("log-debug", control =>
+        {
+            control.TextColor = Color.FromArgb(110, 110, 120);
+        });
+
+        Style.Add<Label>("log-info", control =>
+        {
+            control.TextColor = Color.FromArgb(235, 236, 238);
+        });
+
+        Style.Add<Label>("log-success", control =>
+        {
+            control.TextColor = Color.FromArgb(120, 255, 120);
+        });
+
+        Style.Add<Label>("log-warning", control =>
+        {
+            control.TextColor = Color.FromArgb(255, 225, 80);
+        });
+
+        Style.Add<Label>("log-error", control =>
+        {
+            control.TextColor = Color.FromArgb(255, 120, 120);
+        });
     }
 
     public void Shutdown()
@@ -51,12 +79,12 @@ public class EtoShell
         IsDarkMode = IsWindowsInDarkMode();
         AccentColor = GetWindowsAccentColor();
 
-        Color background     = IsDarkMode ? Color.FromArgb(0x20, 0x20, 0x20) : Colors.White;
+        Color background = IsDarkMode ? Color.FromArgb(0x20, 0x20, 0x20) : Colors.White;
         Color panelBackground = IsDarkMode ? Color.FromArgb(0x2D, 0x2D, 0x2D) : Color.FromArgb(0xF3, 0xF3, 0xF3);
         Color controlBackground = IsDarkMode ? Color.FromArgb(0x33, 0x33, 0x33) : Colors.White;
-        Color foreground     = IsDarkMode ? Colors.White : Colors.Black;
-        Color border         = IsDarkMode ? Color.FromArgb(0x45, 0x45, 0x45) : Color.FromArgb(0xD0, 0xD0, 0xD0);
-        
+        Color foreground = IsDarkMode ? Colors.White : Colors.Black;
+        Color border = IsDarkMode ? Color.FromArgb(0x45, 0x45, 0x45) : Color.FromArgb(0xD0, 0xD0, 0xD0);
+
         // TableLayout — used for root, toolbar, leftPanel, sidebarLayout, buttonLayout, content
         Style.Add<TableLayout>(null, (TableLayout t) => t.BackgroundColor = background);
 
@@ -96,12 +124,12 @@ public class EtoShell
             c.BackgroundColor = controlBackground;
             c.TextColor = foreground;
         });
-        
-        Style.Add<Form>(null,f => f.BackgroundColor = background);
-        Style.Add<Dialog>(null,d => d.BackgroundColor = background);
 
-        Style.Add<Panel>(null,p => p.BackgroundColor = panelBackground);
-        Style.Add<GroupBox>(null,g =>
+        Style.Add<Form>(null, f => f.BackgroundColor = background);
+        Style.Add<Dialog>(null, d => d.BackgroundColor = background);
+
+        Style.Add<Panel>(null, p => p.BackgroundColor = panelBackground);
+        Style.Add<GroupBox>(null, g =>
         {
             g.BackgroundColor = panelBackground;
             g.TextColor = foreground;
@@ -109,40 +137,34 @@ public class EtoShell
 
         Style.Add<Label>(null, l => l.TextColor = foreground);
 
-        Style.Add<TextBox>(null,t =>
+        Style.Add<TextBox>(null, t =>
         {
             t.BackgroundColor = controlBackground;
             t.TextColor = foreground;
         });
-        Style.Add<TextArea>(null,t =>
+        Style.Add<TextArea>(null, t =>
         {
             t.BackgroundColor = controlBackground;
             t.TextColor = foreground;
         });
 
-        Style.Add<ComboBox>(null,c =>
+        Style.Add<ComboBox>(null, c =>
         {
             c.BackgroundColor = controlBackground;
             c.TextColor = foreground;
         });
 
-        Style.Add<CheckBox>(null,c => c.TextColor = foreground);
-        Style.Add<RadioButton>(null,r => r.TextColor = foreground);
+        Style.Add<CheckBox>(null, c => c.TextColor = foreground);
+        Style.Add<RadioButton>(null, r => r.TextColor = foreground);
 
-        
-        Style.Add<GridView>(null,g =>
-        {
-            g.BackgroundColor = controlBackground;
-        });
-        Style.Add<TreeGridView>(null,t =>
-        {
-            t.BackgroundColor = controlBackground;
-        });
 
-        Style.Add<TabControl>(null,t => t.BackgroundColor = background);
+        Style.Add<GridView>(null, g => { g.BackgroundColor = controlBackground; });
+        Style.Add<TreeGridView>(null, t => { t.BackgroundColor = controlBackground; });
+
+        Style.Add<TabControl>(null, t => t.BackgroundColor = background);
 
         // Accent-driven controls
-        Style.Add<LinkButton>(null,l => l.TextColor = AccentColor);
+        Style.Add<LinkButton>(null, l => l.TextColor = AccentColor);
     }
 
     public static Color AccentColor { get; private set; } = Colors.SteelBlue;

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -90,4 +91,29 @@ public class AppServerClient
 
         return GetStreamAsync(url);
     }
+
+    public async Task<VersionedFile> GetVersionedFileStreamAsync(
+        string appId,
+        AppVersion version,
+        string relativePath)
+    {
+        string baseUrl =
+            $"apps/{appId}/versions/{version:VersionStringFormat.FolderSafe}/file";
+
+        string encodedPath = System.Uri.EscapeDataString(relativePath);
+        string hashUrl = $"{baseUrl}/hash/{encodedPath}";
+        string streamUrl = $"{baseUrl}/stream/{encodedPath}";
+
+        string hash = await httpClient.GetFromWinterForge<string>(hashUrl);
+
+        Stream netFile = await GetStreamAsync(streamUrl);
+        return new VersionedFile(hash, netFile);
+    }
+}
+public sealed class VersionedFile(string hash, Stream s) : IDisposable
+{
+    public string Hash => hash;
+    public Stream Stream => s;
+
+    public void Dispose() => s.Dispose();
 }

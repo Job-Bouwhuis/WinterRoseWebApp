@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using Eto.Drawing;
 using Eto.Forms;
@@ -17,15 +19,12 @@ public class InstallationProgressWindow : WindowBase
         Idle
     }
 
-    // Palette
-    private static Color BackgroundColor = Color.FromArgb(24, 26, 31);
-    private static readonly Color PanelColor = Color.FromArgb(32, 35, 41);
-    private static readonly Color BorderColor = Color.FromArgb(48, 51, 58);
-    private static readonly Color TextPrimary = Color.FromArgb(235, 236, 238);
-    private static readonly Color TextMuted = Color.FromArgb(150, 154, 162);
-    private static readonly Color AccentColor = Color.FromArgb(88, 145, 255);
-    private static readonly Color AccentColorDim = Color.FromArgb(60, 100, 180);
-    private static readonly Color SuccessColor = Color.FromArgb(88, 200, 140);
+    private static readonly Color DebugColor = Color.FromArgb(110, 110, 120);
+    private static readonly Color InfoColor = ThemeManager.NexusPalette.TEXT;
+    private static readonly Color TextMuted = ThemeManager.NexusPalette.TEXT_MUTED;
+    private static readonly Color SuccessColor = Color.FromArgb(120, 255, 120);
+    private static readonly Color WarningColor = Color.FromArgb(255, 225, 80);
+    private static readonly Color ErrorColor = Color.FromArgb(255, 120, 120);
 
     private readonly MainThread main;
     private readonly string appTitle;
@@ -33,14 +32,20 @@ public class InstallationProgressWindow : WindowBase
     private Label titleLabel;
     private Label statusLabel;
     private Label percentLabel;
-    private Drawable progressBar;
-    private ListBox logList;
+    private ProgressBar progressBar;
+    private Scrollable logScroll;
+    private StackLayout logStack;
+
+    private readonly List<LogEntry> logEntries = [];
+
+    private sealed record LogEntry(
+        DateTime Timestamp,
+        string Message,
+        ReportStatus Status);
+
     private Panel statusDot;
 
     private ProgressState state = ProgressState.CheckingUpdates;
-    private double progressFraction;
-
-    public Action? OnComplete { get; set; } 
 
     public InstallationProgressWindow(
         MainThread main,
@@ -58,10 +63,21 @@ public class InstallationProgressWindow : WindowBase
             Width = 750;
             Height = 750;
             MinimumSize = new Size(560, 480);
-            BackgroundColor = InstallationProgressWindow.BackgroundColor;
             Resizable = true;
-            
         });
+    }
+
+    private static string GetReportStyle(ReportStatus status)
+    {
+        return status switch
+        {
+            ReportStatus.Debug => "log-debug",
+            ReportStatus.Info => "log-info",
+            ReportStatus.Success => "log-success",
+            ReportStatus.Warning => "log-warning",
+            ReportStatus.Error => "log-error",
+            _ => "log-info"
+        };
     }
 
     public void ShowCheckingUpdates()
@@ -71,32 +87,35 @@ public class InstallationProgressWindow : WindowBase
             state = ProgressState.CheckingUpdates;
 
             SetStatus("Checking for updates...", TextMuted);
-            SetProgress(0);
+            progressBar.Value = 0;
             SetDot(TextMuted);
 
-            logList.Items.Clear();
+            logEntries.Clear();
+            logStack.Items.Clear();
         });
     }
 
-    public void ShowNoUpdates()
+    public void ShowUpdateComplete()
+    {
+        main.Invoke(() =>
+        {
+            state = ProgressState.Idle;
+            ReportProgress(1, "Update complete!");
+        });
+    }
+
+    public void ShowStartingApp()
     {
         main.Invoke(() =>
         {
             state = ProgressState.Starting;
 
             SetStatus("Starting app...", SuccessColor);
-            SetProgress(1.0);
+            ReportProgress(1, "Starting app...");
             SetDot(SuccessColor);
-
-            AddLogEntry("No updates found");
-        });
-
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(500);
-            main.Invoke(Complete);
         });
     }
+
 
     public void ShowUpdating()
     {
@@ -104,9 +123,9 @@ public class InstallationProgressWindow : WindowBase
         {
             state = ProgressState.Updating;
 
-            SetStatus("Updating...", AccentColor);
-            SetProgress(0);
-            SetDot(AccentColor);
+            SetStatus("Updating...", ThemeManager.NexusPalette.ACCENT);
+            progressBar.Value = 0;
+            SetDot(ThemeManager.NexusPalette.ACCENT);
         });
     }
 
@@ -116,8 +135,7 @@ public class InstallationProgressWindow : WindowBase
         titleLabel = new Label
         {
             Text = appTitle,
-            Font = new Font(SystemFont.Bold, 16),
-            TextColor = TextPrimary
+            Font = new Font(SystemFont.Bold, 16)
         };
 
         statusDot = new Panel
@@ -152,7 +170,6 @@ public class InstallationProgressWindow : WindowBase
         var header = new Panel
         {
             Padding = new Padding(20, 18, 20, 18),
-            BackgroundColor = PanelColor,
             Content = headerStack
         };
 
@@ -165,12 +182,12 @@ public class InstallationProgressWindow : WindowBase
             TextAlignment = TextAlignment.Right
         };
 
-        progressBar = new Drawable
+        progressBar = new ProgressBar
         {
-            Height = 10,
-            BackgroundColor = Colors.Transparent
+            MinValue = 0,
+            MaxValue = 100,
+            Value = 0
         };
-        progressBar.Paint += (s, e) => DrawProgressBar(e.Graphics);
 
         var progressStack = new StackLayout
         {
@@ -191,10 +208,16 @@ public class InstallationProgressWindow : WindowBase
         };
 
         // Log list
-        logList = new ListBox
+        logStack = new StackLayout
         {
-            BackgroundColor = PanelColor,
-            TextColor = TextPrimary
+            Orientation = Orientation.Vertical,
+            Spacing = 2
+        };
+
+        logScroll = new Scrollable
+        {
+            Border = BorderType.None,
+            Content = logStack
         };
 
         var logHeader = new Label
@@ -204,22 +227,37 @@ public class InstallationProgressWindow : WindowBase
             TextColor = TextMuted
         };
 
-        var logStack = new StackLayout
+        var copyButton = new Button
         {
-            Orientation = Orientation.Vertical,
-            Spacing = 8,
-            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Text = "Copy Log"
+        };
+
+        copyButton.Click += async (_, _) => await CopyHistoryToClipboardAsync();
+
+        var headerRow = new StackLayout
+        {
+            Orientation = Orientation.Horizontal,
             Items =
             {
-                logHeader,
-                new StackLayoutItem(logList, expand: true)
+                new StackLayoutItem(logHeader, true),
+                copyButton
             }
         };
 
         var logPanel = new Panel
         {
             Padding = new Padding(20, 12, 20, 20),
-            Content = logStack
+            Content = new StackLayout
+            {
+                Orientation = Orientation.Vertical,
+                Spacing = 8,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                Items =
+                {
+                    headerRow,
+                    new StackLayoutItem(logScroll, true)
+                }
+            }
         };
 
         var body = new TableLayout
@@ -246,53 +284,52 @@ public class InstallationProgressWindow : WindowBase
 
     public IProgressScope CreateUiScope()
     {
-        return new ProgressScope(ReportProgress);
+        return new ProgressScope(ReportProgressAsync);
     }
 
-    private void ReportProgress(double value, string message)
+    public Task ReportProgressAsync(
+        double value,
+        string message,
+        ReportStatus status = ReportStatus.Info)
     {
-        main.Invoke(() =>
+        return main.InvokeAsync(() => ReportProgress(value, message, status));
+    }
+
+    public void ReportProgress(
+        double value,
+        string message,
+        ReportStatus status = ReportStatus.Info)
+    {
+        progressBar.Value = (int)(value * 100);
+
+        if (!string.IsNullOrWhiteSpace(message))
         {
-            if (state != ProgressState.Updating)
-                return;
+            statusLabel.Text = message;
+            AddLogEntry(message, status);
+        }
 
-            SetProgress(value);
-
-            if (!string.IsNullOrEmpty(message))
+        if (progressBar.Value >= 1.0)
+        {
+            _ = Task.Run(async () =>
             {
-                statusLabel.Text = message;
-                AddLogEntry(message);
-            }
+                state = ProgressState.Starting;
 
-            if (progressFraction >= 1.0)
-            {
-                _ = Task.Run(async () =>
+                await main.InvokeAsync(() =>
                 {
-                    state = ProgressState.Starting;
-
-                    main.Invoke(() =>
-                    {
-                        SetStatus("Starting app...", SuccessColor);
-                        SetDot(SuccessColor);
-                    });
-
-                    await Task.Delay(500);
-
-                    main.Invoke(Complete);
+                    SetStatus("Starting app...", SuccessColor);
+                    SetDot(SuccessColor);
                 });
-            }
-        });
+
+                await Task.Delay(500);
+
+                await main.InvokeAsync(Complete);
+            });
+        }
     }
 
     private void Complete()
     {
-        if (OnComplete is null)
-        {
-            Close();
-            return;
-        }
-
-        OnComplete();
+        Close();
     }
 
     private void SetStatus(string text, Color color)
@@ -306,40 +343,71 @@ public class InstallationProgressWindow : WindowBase
         statusDot.BackgroundColor = color;
     }
 
-    private void SetProgress(double fraction)
+    private void AddLogEntry(string message, ReportStatus status = ReportStatus.Info)
     {
-        progressFraction = Math.Clamp(fraction, 0.0, 1.0);
-        percentLabel.Text = $"{(int)(progressFraction * 100)}%";
-        progressBar.Invalidate();
-    }
+        var entry = new LogEntry(
+            DateTime.Now,
+            message,
+            status);
 
-    private void AddLogEntry(string message)
-    {
-        logList.Items.Insert(0, new ListItem { Text = message });
-        logList.SelectedIndex = 0;
+        logEntries.Insert(0, entry);
 
-        if (logList.Items.Count > 2000)
-            logList.Items.RemoveAt(logList.Items.Count - 1);
-    }
-
-    private void DrawProgressBar(Graphics g)
-    {
-        var bounds = progressBar.Bounds;
-        var trackRect = new RectangleF(0, 0, bounds.Width, bounds.Height);
-
-        // Track
-        g.FillPath(BorderColor, GraphicsPath.GetRoundRect(trackRect, 5));
-
-        // Fill
-        float fillWidth = (float)(trackRect.Width * progressFraction);
-        if (fillWidth > 1)
+        var timestampLabel = new Label
         {
-            var fillRect = new RectangleF(0, 0, fillWidth, bounds.Height);
-            var gradient = new LinearGradientBrush(
-                AccentColorDim, AccentColor,
-                new PointF(0, 0), new PointF(fillWidth, 0));
+            Text = entry.Timestamp.ToString("HH:mm:ss"),
+            Width = 70,
+            TextColor = TextMuted,
+            Font = new Font(SystemFont.Default, 9),
+            VerticalAlignment = VerticalAlignment.Center
+        };
 
-            g.FillPath(gradient, GraphicsPath.GetRoundRect(fillRect, 5));
+        var messageLabel = new Label
+        {
+            Text = entry.Message,
+            Style = GetReportStyle(entry.Status),
+            Font = new Font(SystemFont.Default, 10),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var row = new StackLayout
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Items =
+            {
+                timestampLabel,
+                new StackLayoutItem(messageLabel, true)
+            }
+        };
+
+        logStack.Items.Insert(0, row);
+
+        while (logEntries.Count > 2000)
+        {
+            logEntries.RemoveAt(logEntries.Count - 1);
+            logStack.Items.RemoveAt(logStack.Items.Count - 1);
         }
+
+        logScroll.ScrollPosition = Point.Empty;
+    }
+
+    public async Task CopyHistoryToClipboardAsync()
+    {
+        var builder = new StringBuilder();
+
+        for (int i = logEntries.Count - 1; i >= 0; i--)
+        {
+            LogEntry entry = logEntries[i];
+
+            builder.Append('[');
+            builder.Append(entry.Timestamp.ToString("HH:mm:ss"));
+            builder.Append("] [");
+            builder.Append(entry.Status);
+            builder.Append("] ");
+            builder.AppendLine(entry.Message);
+        }
+
+        Clipboard.Instance.Text = builder.ToString();
     }
 }

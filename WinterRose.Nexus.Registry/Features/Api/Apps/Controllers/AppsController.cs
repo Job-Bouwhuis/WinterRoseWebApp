@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using WinterRose.Diff;
 using WinterRose.Nexus.Registry.Features.Api.Apps.Services;
 using WinterRose.Nexus.Registry.Features.FileUploads.Services;
 using WinterRose.Web.Utils;
@@ -49,6 +50,42 @@ public class AppsController : ControllerBase
             path);
 
         return File(stream, "application/octet-stream", enableRangeProcessing: true);
+    }
+    
+    [HttpGet("{appId}/versions/{version}/file/stream/{path}")]
+    public IActionResult GetVersionFileStream(
+        string appId,
+        string version,
+        string path)
+    {
+        path = Uri.UnescapeDataString(path);
+        var versionEntry = new AppVersion(version);
+
+        var stream = repo.OpenFileStream(
+            appId,
+            versionEntry,
+            path);
+        
+        return File(stream, "application/octet-stream", enableRangeProcessing: true);
+    }
+    
+    [HttpGet("{appId}/versions/{version}/file/hash/{path}")]
+    public IActionResult GetVersionFileHash(
+        string appId,
+        string version,
+        string path)
+    {
+        path = Uri.UnescapeDataString(path);
+        var versionEntry = new AppVersion(version);
+
+        var stream = repo.OpenFileStream(
+            appId,
+            versionEntry,
+            path);
+
+        FileView view = new FileView(stream);
+        string hash = view.ComputeSha256();
+        return Ok(hash);
     }
     
     [HttpGet("{appName}/versions/{version}/archive")]

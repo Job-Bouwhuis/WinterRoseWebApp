@@ -18,6 +18,19 @@ public static class HttpClientExtensions
             WinterForge.ConvertFromStreamToStream(mem, mem2, TargetFormat.Optimized);
             mem2.Position = 0;
             
+            return HttpClient.FromWinterForge<T>(mem2);
+        }
+
+        public async Task<T> GetFromOptimizedWinterForge<T>(string requestUri)
+        {
+            var response = await client.GetAsync(requestUri).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            return FromWinterForge<T>(await response.Content.ReadAsStreamAsync().ConfigureAwait(false));
+        }
+        
+
+        private static T FromWinterForge<T>(Stream mem2)
+        {
             object? result = WinterForge.DeserializeFromStream(mem2);
             if(result is null or Nothing)
                 throw new InvalidDataException("The response content returned no data");

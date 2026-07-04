@@ -10,6 +10,7 @@ using WinterRose.DependancyInjection.Logging;
 using WinterRose.Nexus.Exceptions;
 using WinterRose.Nexus.Services;
 using WinterRose.Nexus.Shared;
+using WinterRose.ProgressKeeping;
 using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
 
 namespace WinterRose.Nexus.Interface.Windows;
@@ -434,7 +435,7 @@ public class ApplicationStoreWindow : WindowBase
         RefreshPinCheckboxState();
         ShowSidebar();
 
-        progress.Report(1.0, "Done");
+        await progress.ReportAsync(1.0, "Done", ReportStatus.Success);
     }
 
     private async void OnUninstallClicked(object? sender, EventArgs e)

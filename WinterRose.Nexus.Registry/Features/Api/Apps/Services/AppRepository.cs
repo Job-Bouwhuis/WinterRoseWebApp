@@ -90,6 +90,30 @@ public class AppRepository
         return output;
     }
 
+    public FileStream OpenFileStream(string appid, AppVersion version, string relativePath)
+    {
+        string versionRoot = Path.Combine(
+            uploadsFolder.FullName,
+            appid,
+            "versions",
+            version.ToString(VersionStringFormat.FolderSafe),
+            "files");
+
+        if (!Directory.Exists(versionRoot))
+            throw new DirectoryNotFoundException(
+                $"Version '{version}' of app '{appid}' not found.");
+        
+        string fullPath = Path.Combine(versionRoot, relativePath);
+        if (!File.Exists(fullPath))
+            throw new FileNotFoundException($"File '{relativePath}' not found in version '{version}'.");
+
+        return File.Open(
+            fullPath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read);
+    }
+
 
     public async Task<List<AppEntry>> GetAppEntries()
     {

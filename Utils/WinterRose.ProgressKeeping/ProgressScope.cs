@@ -1,22 +1,25 @@
 ﻿namespace WinterRose.ProgressKeeping;
 
-public class ProgressScope : IProgressScope
+public struct ProgressScope : IProgressScope
 {
-    private readonly Action<double, string?> reporter;
+    private readonly Func<double, string?, ReportStatus, Task>? reporter;
     private readonly double weight;
     private double offset;
 
-    public ProgressScope(Action<double, string?> reporter, double weight = 1.0, double offset = 0)
+    public ProgressScope() : this(null, 0, 0) {}
+    
+    public ProgressScope(Func<double, string?, ReportStatus, Task>? reporter, double weight = 1.0, double offset = 0)
     {
         this.reporter = reporter;
         this.weight = weight;
         this.offset = offset;
     }
 
-    public void Report(double value, string? message = null)
+    public async Task ReportAsync(double value, string? message, ReportStatus status)
     {
         double scaled = offset + (value * weight);
-        reporter(scaled, message);
+        if(reporter is not null)
+            await reporter.Invoke(scaled, message, status);
     }
 
     public IProgressScope CreateChild(double weight = 1.0)

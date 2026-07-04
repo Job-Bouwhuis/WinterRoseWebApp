@@ -79,6 +79,21 @@ internal class Program
 
         var app = builder.Build();
 
+        app.Use(async (context, next) =>
+        {
+            Console.WriteLine($"{context.Request.Method} {context.Request.Path}");
+            await next();
+
+            if (context.Response.HasStarted)
+                return;
+
+            if (context.Response.StatusCode == 404)
+            {
+                context.Response.ContentType = "text/plain";
+                await context.Response.WriteAsync("Route not found");
+            }
+        });
+        
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
@@ -95,21 +110,6 @@ internal class Program
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
         }
-
-        app.Use(async (context, next) =>
-        {
-            //Console.WriteLine($"{context.Request.Method} {context.Request.Path}");
-            await next();
-
-            if (context.Response.HasStarted)
-                return;
-
-            if (context.Response.StatusCode == 404)
-            {
-                context.Response.ContentType = "text/plain";
-                await context.Response.WriteAsync("Route not found");
-            }
-        });
 
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
         app.UseHttpsRedirection();

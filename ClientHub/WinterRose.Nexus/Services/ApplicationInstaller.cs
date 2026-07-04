@@ -2,9 +2,11 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
+using GLib;
 using WinterRose.Diff;
 using WinterRose.Nexus.Shared;
 using WinterRose.ProgressKeeping;
+using Task = System.Threading.Tasks.Task;
 
 namespace WinterRose.Nexus.Services;
 
@@ -53,14 +55,14 @@ public class ApplicationInstaller
 
         await ExtractZipAsync(archiveStream, tempPath, extractScope);
 
-        finalizeScope.Report(0.3, "Replacing installation");
+        await finalizeScope.ReportAsync(0.3, "Moving files", ReportStatus.Info);
 
         if (Directory.Exists(targetPath))
             Directory.Delete(targetPath, true);
 
         Directory.Move(tempPath, targetPath);
 
-        finalizeScope.Report(0.7, "Writing app details");
+        await finalizeScope.ReportAsync(0.7, "Writing app details", ReportStatus.Info);
 
         var details = new LocalAppEntry(
             appId, 
@@ -74,7 +76,7 @@ public class ApplicationInstaller
         
         repository.SaveLocalAppDetails(details);
 
-        finalizeScope.Report(1.0, "Install complete");
+        await finalizeScope.ReportAsync(1.0, "Install complete", ReportStatus.Success);
     }
 
     // =========================================================
@@ -98,16 +100,14 @@ public class ApplicationInstaller
 
         var currentVersion = details.InstalledVersion;
 
-        applyScope.Report(0.1, "Applying patch");
+       await applyScope.ReportAsync(0.1, "Applying patch", ReportStatus.Info);
 
         await ApplyDiffStreamAsync(appId, currentVersion, newVersion, appPath, applyScope);
 
-        applyScope.Report(0.9, "Writing app details");
+        await applyScope.ReportAsync(0.9, "Writing app details", ReportStatus.Info);
 
         details.InstalledVersion = newVersion;
         repository.SaveLocalAppDetails(details);
-
-        applyScope.Report(1.0, "Patch complete");
     }
 
     /// <summary>
@@ -145,7 +145,7 @@ public class ApplicationInstaller
         {
             double progress = total == 0 ? 1.0 : (double)index / total;
 
-            scope.Report(progress, $"Extracting {entry.FullName}");
+            await scope.ReportAsync(progress, $"Extracting {entry.FullName}", ReportStatus.Info);
 
             if (string.IsNullOrEmpty(entry.Name))
             {
@@ -171,7 +171,7 @@ public class ApplicationInstaller
             index++;
         }
 
-        scope.Report(1.0, "Extraction complete");
+        await scope.ReportAsync(1.0, "Extraction complete", ReportStatus.Success);
     }
 
     private async Task ApplyDiffStreamAsync(
@@ -187,7 +187,18 @@ public class ApplicationInstaller
         var diff = DirectoryDiff.Load(diffStream);
 
         DiffApplier applier = new DiffApplier();
-        await applier.ApplyDiff(targetPath, diff, scope);
+        await applier.ApplyDiff(
+            targetPath,
+            diff,
+            path => GetAlternativeFileAsync(appId, newVersion, path),
+            scope);
+    }
+
+    private async Task<AlternativeFile> GetAlternativeFileAsync(string appId, AppVersion version, string fileName)
+    {
+        // diff system disposes of AlternativeFile which disposes the stream its given
+        var res = await server.GetVersionedFileStreamAsync(appId, version, fileName);
+        return new AlternativeFile(res.Stream, res.Hash);
     }
 
     public async Task UninstallApplicationAsync(string appId)
