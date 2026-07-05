@@ -4,13 +4,13 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>WinterRose.DependancyInjection</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\WinterRose.Applications.Abstractions\WinterRose.Applications.Abstractions.csproj" />
+      <ProjectReference Include="..\..\..\WinterRose-Development\WinterRose.Recordium\WinterRose.Recordium.csproj" />
       <ProjectReference Include="..\WinterRose.DependencyInjection.Abstractions\WinterRose.DependencyInjection.Abstractions.csproj" />
-      <ProjectReference Include="..\WinterRose.DependencyInjection\WinterRose.DependencyInjection.csproj" />
-      <ProjectReference Include="..\WinterRose.Uris.Abstractions\WinterRose.Uris.Abstractions.csproj" />
+      <ProjectReference Include="..\WinterRose.OSEnvironments\WinterRose.OSEnvironments.csproj" />
     </ItemGroup>
 
 </Project>

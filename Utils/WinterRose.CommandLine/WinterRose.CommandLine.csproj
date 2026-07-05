@@ -7,7 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\WinterRose.OSEnvironments\WinterRose.OSEnvironments.csproj" />
+      <ProjectReference Include="..\..\..\WinterRose.WinterForge\src\WinterRose.Reflection\WinterRose.Reflection.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Validation\" />
     </ItemGroup>
 
 </Project>

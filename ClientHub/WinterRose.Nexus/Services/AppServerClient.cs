@@ -42,9 +42,10 @@ public class AppServerClient
     
     public async Task<AppEntry> GetAppEntryAsync(string appId)
     {
-        return await httpClient
+        AppEntry res = await httpClient
             .GetFromWinterForge<AppEntry>($"apps/{appId}")
             .ConfigureAwait(false);
+        return res;
     }
 
     private async Task<Stream> GetStreamAsync(string url)

@@ -4,11 +4,10 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>WinterRose.DependancyInjection.Abstractions</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\WinterRose-Development\WinterRose.Recordium\WinterRose.Recordium.csproj" />
-      <ProjectReference Include="..\WinterRose.DependancyInjection.Abstractions\WinterRose.DependancyInjection.Abstractions.csproj" />
       <ProjectReference Include="..\WinterRose.OSEnvironments\WinterRose.OSEnvironments.csproj" />
     </ItemGroup>
 

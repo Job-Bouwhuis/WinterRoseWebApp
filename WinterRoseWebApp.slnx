@@ -19,9 +19,11 @@
     <Project Path="ClientHub/Utils/HBOICT_Corp.Validation/WinterRose.Web.Validation.csproj" />
     <Project Path="Utils/WinterRose.Applications.Abstractions/WinterRose.Applications.Abstractions.csproj" />
     <Project Path="Utils/WinterRose.Applications/WinterRose.Applications.csproj" />
+    <Project Path="Utils/WinterRose.CommandLine/WinterRose.CommandLine.csproj" />
     <Project Path="Utils/WinterRose.Configuration/WinterRose.Configuration.csproj" />
-    <Project Path="Utils/WinterRose.DependancyInjection.Abstractions/WinterRose.DependancyInjection.Abstractions.csproj" />
-    <Project Path="Utils/WinterRose.DependancyInjection/WinterRose.DependancyInjection.csproj" />
+    <Project Path="Utils/WinterRose.DependencyInjection.Abstractions/WinterRose.DependencyInjection.Abstractions.csproj" />
+    <Project Path="Utils/WinterRose.DependencyInjection/WinterRose.DependencyInjection.csproj" />
+    <Project Path="Utils/WinterRose.FileManagement/WinterRose.FileManagement.csproj" Id="bc2e8795-c7c5-459f-8a6c-0d9665acedc2" />
     <Project Path="Utils/WinterRose.OSEnvironments/WinterRose.OSEnvironments.csproj" />
     <Project Path="Utils/WinterRose.ProgressKeeping/WinterRose.ProgressKeeping.csproj" />
     <Project Path="Utils/WinterRose.TaskLock/WinterRose.TaskLock.csproj" />

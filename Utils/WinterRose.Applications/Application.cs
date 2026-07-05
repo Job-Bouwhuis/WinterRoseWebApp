@@ -61,12 +61,17 @@ public abstract class Application : IApplication
         
         runningTask = Task.Run(async () =>
         {
+            logger.Info("Application starting...");
             OnStarting();
 
+            logger.Info("Application application running!");
             try
             {
                 while (!cancelSource.IsCancellationRequested)
+                {
                     Tick(cancelSource.Token);
+                    await Task.Yield();
+                }
                 logger.Info("Application stopping...");
                 Environment.ExitCode = 0;
             }
@@ -92,6 +97,21 @@ public abstract class Application : IApplication
     protected virtual void OnStopping() { }
 
     public async ValueTask DisposeAsync()
+    {
+        if (disposed)
+            return;
+        disposed = true;
+        
+        ILogger<Application> logger = Services.Resolve<ILogger<Application>>();
+        GC.SuppressFinalize(this);
+        cancelSource.Cancel();
+        runningTask?.Wait();
+        Services.Dispose();
+        
+        logger.Info("Application stopped.");
+    }
+    
+    public void Dispose()
     {
         if (disposed)
             return;

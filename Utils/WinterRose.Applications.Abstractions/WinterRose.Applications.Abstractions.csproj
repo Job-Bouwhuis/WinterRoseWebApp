@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\WinterRose.DependancyInjection.Abstractions\WinterRose.DependancyInjection.Abstractions.csproj" />
+      <ProjectReference Include="..\WinterRose.DependencyInjection.Abstractions\WinterRose.DependencyInjection.Abstractions.csproj" />
     </ItemGroup>
 
 </Project>

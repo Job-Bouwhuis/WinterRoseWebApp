@@ -82,10 +82,9 @@ public class ApplicationStarter(ApplicationInstaller installer,
         }
         else
         {
-            latestVersion = localEntry!.InstalledVersion;
-            
             if (localEntry is null)
             {
+                latestVersion = serverEntry.Versions.GetLatest("");
                 var result = await dialog.ShowAsync(new DialogRequest
                 {
                     Title = "Nexus",
@@ -107,6 +106,8 @@ public class ApplicationStarter(ApplicationInstaller installer,
 
                 await installer.InstallFromArchiveAsync(appId, latestVersion, scope);
             }
+            else
+                latestVersion = localEntry.InstalledVersion;
         }
 
         if (startAfterUpdate)

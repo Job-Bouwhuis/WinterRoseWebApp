@@ -1,14 +1,20 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Eto.Drawing;
+using Microsoft.AspNetCore.Components.RenderTree;
 using WinterRose.Applications;
 using WinterRose.Applications.ApplicationInstanceLocks;
+using WinterRose.CommandLine;
 using WinterRose.Nexus;
 using WinterRose.Configuration;
 using WinterRose.DependancyInjection;
+using WinterRose.DependancyInjection.Logging;
 using WinterRose.Nexus.Interface;
 using WinterRose.Nexus.Interface.Dialogs;
 using WinterRose.Nexus.Interface.Preferences;
@@ -18,20 +24,58 @@ using WinterRose.Nexus.Services;
 using WinterRose.Nexus.Services.SelfUpdates;
 using WinterRose.Nexus.Shared;
 using WinterRose.Nexus.Uri;
+using WinterRose.Recordium;
 using WinterRose.Uris;
 using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
 
 public partial class Program
 {
-    private static async Task Main(string[] args)
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
+
+    private static void Main(string[] args)
     {
+        Console.WriteLine("Args: " + string.Join(" ", args));
+
+        Console.WriteLine("Version 3");
+        
+        var argBuilder = ProgramArguments.CreateBuilder();
+
+        var uriRuleBuilder = argBuilder.Value<string>("uri", position: 0, optional: true);
+        uriRuleBuilder.Bound<string>(
+            predicate: val =>
+                val.StartsWith("winterrose://"), // TODO: make sure the Nexus app uses "wrnexus://" instead
+            messageFactory: s => "First argument 'uri' must start with 'winterrose://'");
+
+        argBuilder.Forward("forward");
+
+        argBuilder.Flag("self-update");
+        argBuilder.Value<string>("original-path");
+        argBuilder.Value<int>("processId");
+        argBuilder.Flag("clean-copy");
+        argBuilder.Build();
+
+        ProgramArguments.Parse(args);
+
+
+        if (ProgramArguments.TryGet("processId", out int processId))
+        {
+            Log l = new("Nexus");
+            l.Info($"Arguments indicate a need to wait for a process with id {processId} to exit before continuing.");
+            try
+            {
+                System.Diagnostics.Process.GetProcessById(processId).WaitForExit();
+            }
+            catch (ArgumentException e) when (e.Message.Contains("not running"))
+            {
+            }
+            
+            l.Info("Success, the process is no longer running!");
+        }
+
         Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
         _ = typeof(ByteArrayValueProvider);
-
-        // this is for testing purposes.
-        //args = ["winterrose://show-window"];
-
 
         ServiceBuilder lockServicesBuilder = new ServiceBuilder();
         lockServicesBuilder.AddApplicationMutex("winterrose.hub");
@@ -48,7 +92,7 @@ public partial class Program
 
             // we get the forwarder that was made for the OS we run on
             var forwarder = lockServices.Resolve<IUriForwarder>();
-            await forwarder.ForwardAsync(args[0]);
+            forwarder.ForwardAsync(args[0]).GetAwaiter().GetResult();
             lockServices.Dispose();
             return;
         }
@@ -108,34 +152,79 @@ public partial class Program
         builder.Services.AddUriListener("winterrose.hub", "winterrose", "WinterRose Hub");
 
         builder.Services.AddSingleton<SelfUpdateStarter>();
+        builder.Services.AddSingleton<SelfUpdateChecker>();
+        builder.Services.AddSingleton<SelfUpdater>();
 
         // Building the app adds loggers automatically
-        await using App app = builder.Build<App>();
+        using var app = builder.Build<App>();
 
-        CheckNexusUpdates(ref args, app.Services);
-
-        app.BeginUriListener();
-
-        if (args.Length > 0)
+        BuildOptions(app.Services.Resolve<UserPreferences>());
+        bool newUpdate = false;
+        if (ProgramArguments.Exists("self-update"))
         {
-            _ = Task.Run(async () =>
+            var selfUpdater = app.Services.Resolve<SelfUpdater>();
+            selfUpdater.InstallUpdate().ContinueWith(async t =>
             {
-                await Task.Delay(2000);
-                await app.Services.Resolve<IUriForwarder>().ForwardAsync(args[0]);
+                if (t.IsFaulted)
+                {
+                    IEnumerable<string> messages = t.Exception.InnerExceptions.Select(e => e.Message);
+                    await app.Services.Resolve<IModalDialog>().ShowAsync($"Exceptions: " + string.Join(Environment.NewLine, messages));
+                    app.Stop();
+                    return;
+                }
+                
+                app.Services.Resolve<SelfStarter>().Start();
+                app.Stop();
             });
         }
+        else if (newUpdate = CheckNexusUpdates(ref args, app.Services))
+        {
+            SelfUpdateStarter selfUpdateStarter = app.Services.Resolve<SelfUpdateStarter>();
+            lockServices.Dispose();
+            selfUpdateStarter.StartSelfUpdate(args);
+            app.Stop();
+        }
+        
+        if (!newUpdate)
+        {
+            if (ProgramArguments.Exists("clean-copy"))
+                app.Services.Resolve<SelfUpdateCleanup>().Clean();
+            
+            if (!ProgramArguments.Exists("self-update"))
+            {
+                app.BeginUriListener();
 
-        app.Services.Resolve<AppTray>().Initialize(new Bitmap("Icons\\NexusLogo.bmp"));
-        BuildOptions(app.Services.Resolve<UserPreferences>());
-        app.Run();
 
-        lockServices.Dispose();
+                if (ProgramArguments.TryGet<string>("uri", out var uri))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(2000);
+                        await app.Services.Resolve<IUriForwarder>().ForwardAsync(uri);
+                    });
+                }
+
+                app.Services.Resolve<AppTray>().Initialize(new Bitmap("Icons\\NexusLogo.bmp"));
+            }
+
+            app.Run();
+            lockServices.Dispose();
+        }
     }
 
-    static void CheckNexusUpdates(ref string[] args, IServiceProvider services)
+    static bool CheckNexusUpdates(ref string[] args, IServiceProvider services)
     {
-        SelfUpdateStarter selfUpdateStarter = services.Resolve<SelfUpdateStarter>();
-        selfUpdateStarter.StartSelfUpdate(args);
+        var logger = services.Resolve<ILogger<NexusClient>>();
+        logger.Info("Checking Nexus updates...");
+
+        if (services.Resolve<SelfUpdateChecker>().Check())
+        {
+            logger.Info("Nexus has an update!");
+            return true;
+        }
+
+        logger.Info("Nexus has no updates.");
+        return false;
     }
 
     static void BuildOptions(UserPreferences prefs)

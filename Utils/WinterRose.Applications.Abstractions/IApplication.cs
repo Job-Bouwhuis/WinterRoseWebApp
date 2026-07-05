@@ -4,7 +4,7 @@ using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
 
 namespace WinterRose.Applications;
 
-public interface IApplication : IAsyncDisposable
+public interface IApplication : IAsyncDisposable, IDisposable
 {
     IServiceProvider Services { get; set; }
     bool IsRunning { get; }

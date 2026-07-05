@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>aspnet-WinterRose.ClientHub-c7b80a6f-3e7c-4425-9bbd-776bf8e55d9a</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <ApplicationIcon>Icons\NexusLogo-transparent.ico</ApplicationIcon>
     <!--<DockerfileContext>..\..</DockerfileContext>-->
   </PropertyGroup>
@@ -15,8 +15,10 @@
     <ProjectReference Include="..\..\..\WinterRose-Development\WinterRose.FuzzySearching\WinterRose.FuzzySearching.csproj" />
     <ProjectReference Include="..\..\..\WinterRose.WinterForge\src\WinterRose.WinterForge\WinterRose.WinterForge.csproj" />
     <ProjectReference Include="..\..\Utils\WinterRose.Applications\WinterRose.Applications.csproj" />
+    <ProjectReference Include="..\..\Utils\WinterRose.CommandLine\WinterRose.CommandLine.csproj" />
     <ProjectReference Include="..\..\Utils\WinterRose.Configuration\WinterRose.Configuration.csproj" />
-    <ProjectReference Include="..\..\Utils\WinterRose.DependancyInjection\WinterRose.DependancyInjection.csproj" />
+    <ProjectReference Include="..\..\Utils\WinterRose.DependencyInjection\WinterRose.DependencyInjection.csproj" />
+    <ProjectReference Include="..\..\Utils\WinterRose.FileManagement\WinterRose.FileManagement.csproj" />
     <ProjectReference Include="..\..\Utils\WinterRose.ProgressKeeping\WinterRose.ProgressKeeping.csproj" />
     <ProjectReference Include="..\..\Utils\WinterRose.Uris\WinterRose.Uris.csproj" />
     <ProjectReference Include="..\..\WinterRose.Nexus.Shared\WinterRose.Nexus.Shared.csproj" />
@@ -45,10 +47,6 @@
     <None Update="Icons\NexusLogo-transparent.svg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Models\" />
   </ItemGroup>
 
 </Project>

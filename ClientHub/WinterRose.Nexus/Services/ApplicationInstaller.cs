@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Threading.Tasks;
 using GLib;
 using WinterRose.Diff;
+using WinterRose.FileManagement;
 using WinterRose.Nexus.Shared;
 using WinterRose.ProgressKeeping;
 using Task = System.Threading.Tasks.Task;
@@ -24,9 +25,21 @@ public class ApplicationInstaller
         appsRoot = Path.Combine(Environment.CurrentDirectory, "apps");
     }
 
-    private string GetAppRoot(string appId) => repository.GetAppRoot(appId);
+    private string GetAppRoot(string appId)
+    {
+        if (ApplicationInstallerContext.CurrentAppRoot is string overrideRoot)
+            return overrideRoot;
 
-    private string GetAppFilesPath(string appId) => repository.GetAppFilesPath(appId);
+        return repository.GetAppRoot(appId);
+    }
+
+    private string GetAppFilesPath(string appId)
+    {
+        if (ApplicationInstallerContext.CurrentAppRoot is string overrideRoot)
+            return overrideRoot;
+
+        return repository.GetAppFilesPath(appId);
+    }
 
     // =========================================================
     // FULL INSTALL
@@ -40,13 +53,12 @@ public class ApplicationInstaller
         await using var archiveStream = await server.GetVersionArchiveStreamAsync(appId, version);
         AppEntry entry = await server.GetAppEntryAsync(appId);
         
-        var appRoot = GetAppRoot(appId);
         var targetPath = GetAppFilesPath(appId);
 
         var extractScope = progress.CreateChild(0.85);
         var finalizeScope = progress.CreateChild(0.15);
 
-        string tempPath = Path.Combine(appRoot, "_tmp_install");
+        string tempPath = Path.Combine(Path.GetTempPath(), "_tmp_install");
 
         if (Directory.Exists(tempPath))
             Directory.Delete(tempPath, true);
@@ -58,9 +70,9 @@ public class ApplicationInstaller
         await finalizeScope.ReportAsync(0.3, "Moving files", ReportStatus.Info);
 
         if (Directory.Exists(targetPath))
-            Directory.Delete(targetPath, true);
+            NexusClient.SafeDeleteDirectory(new DirectoryInfo(targetPath));
 
-        Directory.Move(tempPath, targetPath);
+        Directory.MoveCrossDrive(tempPath, targetPath);
 
         await finalizeScope.ReportAsync(0.7, "Writing app details", ReportStatus.Info);
 
@@ -78,6 +90,8 @@ public class ApplicationInstaller
 
         await finalizeScope.ReportAsync(1.0, "Install complete", ReportStatus.Success);
     }
+    
+    
 
     // =========================================================
     // PATCH / UPDATE
@@ -173,7 +187,17 @@ public class ApplicationInstaller
 
         await scope.ReportAsync(1.0, "Extraction complete", ReportStatus.Success);
     }
-
+    
+    public Task ApplyDiffStreamSpecificVersionsAsync(
+        string appId, 
+        AppVersion newVersion,
+        AppVersion currentVersion, 
+        string targetPath, 
+        IProgressScope scope)
+    {
+        return ApplyDiffStreamAsync(appId, currentVersion, newVersion, targetPath, scope);
+    }
+    
     private async Task ApplyDiffStreamAsync(
         string appId,
         AppVersion currentVersion,
@@ -190,8 +214,8 @@ public class ApplicationInstaller
         await applier.ApplyDiff(
             targetPath,
             diff,
-            path => GetAlternativeFileAsync(appId, newVersion, path),
-            scope);
+            scope,
+            path => GetAlternativeFileAsync(appId, newVersion, path));
     }
 
     private async Task<AlternativeFile> GetAlternativeFileAsync(string appId, AppVersion version, string fileName)
