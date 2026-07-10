@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 using System.Threading.Tasks;
 using Eto.Drawing;
@@ -36,6 +37,23 @@ public class InstallationProgressWindow : WindowBase
     private Scrollable logScroll;
     private StackLayout logStack;
 
+    private const int LOG_MAX_ENTRIES = 50;
+
+    private readonly LogEntry[] logBuffer = new LogEntry[LOG_MAX_ENTRIES];
+    private int logWriteIndex;
+    private int logCount;
+    private bool logNeedsRefresh;
+    
+    private sealed class LogRow
+    {
+        public Label TimeLabel;
+        public Label MessageLabel;
+        public StackLayout Root;
+    }
+    
+    private readonly Stack<LogRow> logRowPool = new();
+    private readonly List<LogRow> activeRows = new();
+    
     private readonly List<LogEntry> logEntries = [];
 
     private sealed record LogEntry(
@@ -45,6 +63,8 @@ public class InstallationProgressWindow : WindowBase
 
     private Panel statusDot;
 
+    private bool showing = true;
+    
     private ProgressState state = ProgressState.CheckingUpdates;
 
     public InstallationProgressWindow(
@@ -65,6 +85,28 @@ public class InstallationProgressWindow : WindowBase
             MinimumSize = new Size(560, 480);
             Resizable = true;
         });
+
+        StartLogRefreshLoop();
+    }
+    
+    private async Task StartLogRefreshLoop()
+    {
+        while (showing)
+        {
+            if (logNeedsRefresh)
+            {
+                logNeedsRefresh = false;
+                main.Invoke(() => RefreshLogUi());
+            }
+
+            await Task.Delay(16); // ~20 FPS UI updates
+        }
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        showing = false;
+        base.OnClosing(e);
     }
 
     private static string GetReportStyle(ReportStatus status)
@@ -109,7 +151,7 @@ public class InstallationProgressWindow : WindowBase
         main.Invoke(() =>
         {
             state = ProgressState.Starting;
-
+            AddLogEntry("starting called");
             SetStatus("Starting app...", SuccessColor);
             ReportProgress(1, "Starting app...");
             SetDot(SuccessColor);
@@ -300,30 +342,13 @@ public class InstallationProgressWindow : WindowBase
         string message,
         ReportStatus status = ReportStatus.Info)
     {
-        progressBar.Value = (int)(value * 100);
-
+        progressBar.Value = (int)Math.Round(value);
+        //AddLogEntry(progressBar.Value.ToString(), status);
         if (!string.IsNullOrWhiteSpace(message))
         {
             statusLabel.Text = message;
-            AddLogEntry(message, status);
-        }
-
-        if (progressBar.Value >= 1.0)
-        {
-            _ = Task.Run(async () =>
-            {
-                state = ProgressState.Starting;
-
-                await main.InvokeAsync(() =>
-                {
-                    SetStatus("Starting app...", SuccessColor);
-                    SetDot(SuccessColor);
-                });
-
-                await Task.Delay(500);
-
-                await main.InvokeAsync(Complete);
-            });
+            if(status != ReportStatus.Info)
+                AddLogEntry(message, status);
         }
     }
 
@@ -345,51 +370,84 @@ public class InstallationProgressWindow : WindowBase
 
     private void AddLogEntry(string message, ReportStatus status = ReportStatus.Info)
     {
-        var entry = new LogEntry(
-            DateTime.Now,
-            message,
-            status);
+        var entry = new LogEntry(DateTime.Now, message, status);
 
-        logEntries.Insert(0, entry);
+        logBuffer[logWriteIndex] = entry;
 
-        var timestampLabel = new Label
+        logWriteIndex = (logWriteIndex + 1) % LOG_MAX_ENTRIES;
+        logCount = Math.Min(logCount + 1, LOG_MAX_ENTRIES);
+
+        logNeedsRefresh = true;
+    }
+    
+    private void RefreshLogUi()
+    {
+        logStack.Items.Clear();
+
+        int index = logWriteIndex - 1;
+        if (index < 0)
+            index = LOG_MAX_ENTRIES - 1;
+
+        for (int i = 0; i < logCount; i++)
         {
-            Text = entry.Timestamp.ToString("HH:mm:ss"),
-            Width = 70,
-            TextColor = TextMuted,
-            Font = new Font(SystemFont.Default, 9),
-            VerticalAlignment = VerticalAlignment.Center
-        };
+            LogEntry entry = logBuffer[index];
+            index--;
+            if (index < 0)
+                index = LOG_MAX_ENTRIES - 1;
 
-        var messageLabel = new Label
-        {
-            Text = entry.Message,
-            Style = GetReportStyle(entry.Status),
-            Font = new Font(SystemFont.Default, 10),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        var row = new StackLayout
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 10,
-            HorizontalContentAlignment = HorizontalAlignment.Stretch,
-            Items =
-            {
-                timestampLabel,
-                new StackLayoutItem(messageLabel, true)
-            }
-        };
-
-        logStack.Items.Insert(0, row);
-
-        while (logEntries.Count > 2000)
-        {
-            logEntries.RemoveAt(logEntries.Count - 1);
-            logStack.Items.RemoveAt(logStack.Items.Count - 1);
+            var row = GetOrCreateRow(entry);
+            logStack.Items.Add(row.Root);
         }
 
-        logScroll.ScrollPosition = Point.Empty;
+        logNeedsRefresh = false;
+    }
+    
+    private LogRow GetOrCreateRow(LogEntry entry)
+    {
+        if (!logRowPool.TryPop(out LogRow row))
+        {
+            row = new LogRow
+            {
+                TimeLabel = new Label
+                {
+                    Width = 70,
+                    TextColor = TextMuted,
+                    Font = new Font(SystemFont.Default, 9),
+                    VerticalAlignment = VerticalAlignment.Center
+                },
+                MessageLabel = new Label
+                {
+                    Font = new Font(SystemFont.Default, 10),
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            };
+
+            row.Root = new StackLayout
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 10,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                Items =
+                {
+                    row.TimeLabel,
+                    new StackLayoutItem(row.MessageLabel, true)
+                }
+            };
+        }
+
+        row.TimeLabel.Text = entry.Timestamp.ToString("HH:mm:ss");
+        row.MessageLabel.Text = entry.Message;
+        row.MessageLabel.Style = GetReportStyle(entry.Status);
+
+        return row;
+    }
+    
+    private void ReturnRowsToPool()
+    {
+        foreach (var row in activeRows)
+            logRowPool.Push(row);
+
+        activeRows.Clear();
     }
 
     public async Task CopyHistoryToClipboardAsync()

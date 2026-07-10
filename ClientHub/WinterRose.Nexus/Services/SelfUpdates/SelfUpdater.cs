@@ -40,13 +40,15 @@ public class SelfUpdater(
         try
         {
             nexusEntry = await server.GetAppEntryAsync(NexusClient.NexusAppId);
-            ;
         }
         catch
         {
             await dialog.ShowAsync("The Nexus Registry is unavailable at the moment. Please wait until it is");
             logger.Error("Nexus registry unavailable.");
-            return;
+            // returning here will cause the original at this time non affected original Nexus client
+            // to be started again and clean up this copy
+            // Since it will also not be able to reach the Nexus Registry, it wont ask to update again
+            return; 
         }
 
         logger.Info("Retrieving current version...");

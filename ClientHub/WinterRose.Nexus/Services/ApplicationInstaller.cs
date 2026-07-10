@@ -103,7 +103,7 @@ public class ApplicationInstaller
     {
         var appPath = GetAppFilesPath(appId);
 
-        var applyScope = progress.CreateChild(1.0);
+        var applyScope = progress.CreateChild(0.8);
 
         if (!Directory.Exists(appPath))
             throw new DirectoryNotFoundException("App not installed");
@@ -157,9 +157,11 @@ public class ApplicationInstaller
 
         foreach (var entry in entries)
         {
-            double progress = total == 0 ? 1.0 : (double)index / total;
-
-            await scope.ReportAsync(progress, $"Extracting {entry.FullName}", ReportStatus.Info);
+            double progress = total == 0 ? .95 : (double)index / total;
+            if (progress > .95)
+                progress = .95;
+            
+            scope.ReportAsync(progress, $"Extracting {entry.FullName}", ReportStatus.Info);
 
             if (string.IsNullOrEmpty(entry.Name))
             {
