@@ -46,7 +46,7 @@ public class Nexus(string appId) : IDisposable
     ///
     /// When the user specifically configured the app not to update past a certain update, Nexus wont update the app.<br/><br/>
     ///
-    /// Nexus will also ensure that the app wont continue executing if it, or a specific version, has been marked as "blocked"
+    /// Nexus will also ensure that the app wont continue executing if it has been marked as "blocked"
     /// </summary>
     /// <remarks>This method will terminate the app if the required command line arg from the Nexus client is not provided. <br/>
     /// If execution of your app comes past this method it is to assume the app is on the correct version and is authorized to run</remarks>

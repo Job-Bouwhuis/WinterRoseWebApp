@@ -22,6 +22,9 @@ public class SelfUpdateChecker(AppServerClient server)
         {
             AppEntry entry = await server.GetAppEntryAsync(NexusClient.NexusAppId).ConfigureAwait(false);
 
+            if (entry is null)
+                return false;
+            
             if (!File.Exists("NexusVersion.wf"))
                 return true;
         

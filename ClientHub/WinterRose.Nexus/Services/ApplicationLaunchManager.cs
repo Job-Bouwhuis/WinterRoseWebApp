@@ -8,7 +8,7 @@ using WinterRose.Nexus.Shared;
 
 namespace WinterRose.Nexus.Services;
 
-public class ApplicationLauchManager : IApplicationLauchManager
+public class ApplicationLaunchManager : IApplicationLaunchManager
 {
     internal class ProcessInfo
     {
@@ -22,13 +22,13 @@ public class ApplicationLauchManager : IApplicationLauchManager
     private readonly object processLock = new();
 
     private readonly IApplicationLauncher launcher;
-    private readonly ILogger<ApplicationLauchManager> logger;
+    private readonly ILogger<ApplicationLaunchManager> logger;
 
-    public ApplicationLauchManager(
+    public ApplicationLaunchManager(
         IApplicationLauncher launcher, 
         IAsyncEventQueue<ApplicationShutdownEvent> shutdownEvent,
         CancellationToken ct,
-        ILogger<ApplicationLauchManager> logger)
+        ILogger<ApplicationLaunchManager> logger)
     {
         this.launcher = launcher;
         this.logger = logger;

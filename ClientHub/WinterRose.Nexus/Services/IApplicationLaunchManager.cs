@@ -3,7 +3,7 @@ using WinterRose.Nexus.Shared;
 
 namespace WinterRose.Nexus.Services;
 
-public interface IApplicationLauchManager
+public interface IApplicationLaunchManager
 {
     List<ProcessReference> GetRunningProcesses();
     ProcessReference LaunchApplication(string appId, AppLaunchTarget launchTarget, params string[] args);

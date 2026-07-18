@@ -13,7 +13,7 @@ using IServiceProvider = WinterRose.DependancyInjection.IServiceProvider;
 public class ApplicationStarter(ApplicationInstaller installer,
     ClientAppRepository appRepo,
     AppServerClient server,
-    IApplicationLauchManager appLauncher,
+    IApplicationLaunchManager appLauncher,
     MainThread main,
     IServiceProvider services,
     IModalDialog dialog,
@@ -122,10 +122,15 @@ public class ApplicationStarter(ApplicationInstaller installer,
                 _ = dialog.ShowAsync($"Application could not be started: {e.GetType().Name}");
                 logger.Error(e, "Application could not be started");
             }
+            
+            await Task.Delay(500);
+            await main.InvokeAsync(window.Close);
         }
         else
         {
             await main.InvokeAsync(window.ShowUpdateComplete);
+            await Task.Delay(500);
+            await main.InvokeAsync(window.Close);
         }
     }
 }

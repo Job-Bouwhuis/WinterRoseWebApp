@@ -436,6 +436,8 @@ public class ApplicationStoreWindow : WindowBase
         ShowSidebar();
 
         await progress.ReportAsync(1.0, "Done", ReportStatus.Success);
+        await Task.Delay(500);
+        progressWindow.Close();
     }
 
     private async void OnUninstallClicked(object? sender, EventArgs e)

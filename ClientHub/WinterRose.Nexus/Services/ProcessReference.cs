@@ -3,13 +3,13 @@
 public struct ProcessReference
 {
     internal readonly string AppId;
-    internal readonly ApplicationLauchManager.ProcessInfo Info;
-    internal readonly ApplicationLauchManager Owner;
+    internal readonly ApplicationLaunchManager.ProcessInfo Info;
+    internal readonly ApplicationLaunchManager Owner;
 
     internal ProcessReference(
         string appId,
-        ApplicationLauchManager.ProcessInfo info,
-        ApplicationLauchManager owner)
+        ApplicationLaunchManager.ProcessInfo info,
+        ApplicationLaunchManager owner)
     {
         AppId = appId;
         Info = info;
